@@ -1,0 +1,983 @@
+openapi: 3.0.3
+info:
+  title: ChronoTask Calendar & Task Management API
+  version: 1.0.0
+  description: Production-grade REST API specification for ChronoTask calendar-based task manager.
+  contact:
+    name: ChronoTask Core Platform Team
+    email: api-contracts@chronotask.internal
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development Next.js API server
+  - url: https://api.chronotask.app/api
+    description: Production API gateway
+
+tags:
+  - name: Health
+    description: System liveness probes
+  - name: Tasks
+    description: Task lifecycle and management operations
+  - name: Completion
+    description: Deliberate task completion confirmation operations
+  - name: Calendar
+    description: Month-level status rollups and day status mapping
+  - name: Analytics
+    description: Deterministic productivity metrics and contextual insights
+  - name: Categories
+    description: Task category taxonomy
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check probe
+      description: Returns current system health and database connectivity status.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: System is operational
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                200_health_ok:
+                  value:
+                    status: ok
+                    timestamp: "2026-09-01T12:00:00Z"
+                    database: connected
+
+  /tasks:
+    get:
+      operationId: listTasks
+      summary: List tasks with optional date filter
+      description: Retrieves tasks filtered by calendar date (YYYY-MM-DD), priority, or completion status.
+      tags:
+        - Tasks
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Calendar date in YYYY-MM-DD format
+          examples:
+            200_success_filter_date:
+              value: "2026-09-01"
+        - name: completed
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PriorityLevel'
+      responses:
+        '200':
+          description: List of tasks matching query parameters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+              examples:
+                200_success_filter_date:
+                  value:
+                    - id: "task-101"
+                      userId: "user-default"
+                      title: "Analyze Quarterly Metrics"
+                      description: "Review performance reports for Q3"
+                      date: "2026-09-01"
+                      dueTime: "14:30"
+                      completed: true
+                      completedAt: "2026-09-01T14:45:00Z"
+                      priority: "HIGH"
+                      categoryId: "cat-1"
+                      recurrenceId: null
+                      createdAt: "2026-08-30T09:00:00Z"
+                      updatedAt: "2026-09-01T14:45:00Z"
+                    - id: "task-102"
+                      userId: "user-default"
+                      title: "Deploy Gateway Update"
+                      description: null
+                      date: "2026-09-01"
+                      dueTime: null
+                      completed: false
+                      completedAt: null
+                      priority: "URGENT"
+                      categoryId: "cat-2"
+                      recurrenceId: "rec-50"
+                      createdAt: "2026-08-30T09:15:00Z"
+                      updatedAt: "2026-08-30T09:15:00Z"
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              examples:
+                400_invalid_date_format:
+                  value:
+                    code: "INVALID_QUERY_PARAMS"
+                    message: "Query parameter 'date' must conform to YYYY-MM-DD format."
+                    details:
+                      field: "date"
+                      provided: "01-09-2026"
+                    timestamp: "2026-09-01T12:00:00Z"
+                    path: "/api/tasks"
+
+    post:
+      operationId: createTask
+      summary: Create a new task
+      description: Creates a single task or initiates a recurring schedule if recurrenceConfig is provided.
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+            examples:
+              201_created_single_task:
+                value:
+                  title: "Review System Architecture"
+                  description: "Finalize calendar schema contracts"
+                  date: "2026-09-01"
+                  dueTime: "11:00"
+                  priority: "HIGH"
+                  categoryId: "cat-1"
+                  recurrenceConfig: null
+              422_missing_title:
+                value:
+                  title: ""
+                  description: "Invalid empty title"
+                  date: "2026-09-01"
+                  priority: "MEDIUM"
+      responses:
+        '201':
+          description: Task successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                201_created_single_task:
+                  value:
+                    id: "task-103"
+                    userId: "user-default"
+                    title: "Review System Architecture"
+                    description: "Finalize calendar schema contracts"
+                    date: "2026-09-01"
+                    dueTime: "11:00"
+                    completed: false
+                    completedAt: null
+                    priority: "HIGH"
+                    categoryId: "cat-1"
+                    recurrenceId: null
+                    createdAt: "2026-09-01T08:00:00Z"
+                    updatedAt: "2026-09-01T08:00:00Z"
+        '422':
+          description: Validation error on request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              examples:
+                422_missing_title:
+                  value:
+                    code: "VALIDATION_FAILED"
+                    message: "Validation failed on one or more fields."
+                    details:
+                      field: "title"
+                      issue: "Title cannot be blank or empty."
+                    timestamp: "2026-09-01T08:00:00Z"
+                    path: "/api/tasks"
+
+  /tasks/{id}:
+    get:
+      operationId: getTaskById
+      summary: Fetch a single task by ID
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            200_success_task_101:
+              value: "task-101"
+            404_task_not_found:
+              value: "task-99999"
+      responses:
+        '200':
+          description: Task details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                200_success_task_101:
+                  value:
+                    id: "task-101"
+                    userId: "user-default"
+                    title: "Analyze Quarterly Metrics"
+                    description: "Review performance reports for Q3"
+                    date: "2026-09-01"
+                    dueTime: "14:30"
+                    completed: true
+                    completedAt: "2026-09-01T14:45:00Z"
+                    priority: "HIGH"
+                    categoryId: "cat-1"
+                    recurrenceId: null
+                    createdAt: "2026-08-30T09:00:00Z"
+                    updatedAt: "2026-09-01T14:45:00Z"
+        '404':
+          description: Task does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              examples:
+                404_task_not_found:
+                  value:
+                    code: "NOT_FOUND"
+                    message: "Task with ID 'task-99999' was not found."
+                    details: null
+                    timestamp: "2026-09-01T08:00:00Z"
+                    path: "/api/tasks/task-99999"
+
+    patch:
+      operationId: updateTask
+      summary: Update task properties
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            200_success_update_task:
+              value: "task-101"
+        - name: editScope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [single, future, all]
+            default: single
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+            examples:
+              200_success_update_task:
+                value:
+                  title: "Analyze Quarterly Metrics - Revised"
+                  priority: "URGENT"
+                  dueTime: "16:00"
+      responses:
+        '200':
+          description: Updated task instance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                200_success_update_task:
+                  value:
+                    id: "task-101"
+                    userId: "user-default"
+                    title: "Analyze Quarterly Metrics - Revised"
+                    description: "Review performance reports for Q3"
+                    date: "2026-09-01"
+                    dueTime: "16:00"
+                    completed: true
+                    completedAt: "2026-09-01T14:45:00Z"
+                    priority: "URGENT"
+                    categoryId: "cat-1"
+                    recurrenceId: null
+                    createdAt: "2026-08-30T09:00:00Z"
+                    updatedAt: "2026-09-01T15:00:00Z"
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+
+    delete:
+      operationId: deleteTask
+      summary: Delete a task
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            204_task_deleted:
+              value: "task-101"
+            404_task_not_found:
+              value: "task-99999"
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [single, future, all]
+            default: single
+      responses:
+        '204':
+          description: Task successfully deleted (no body)
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              examples:
+                404_task_not_found:
+                  value:
+                    code: "NOT_FOUND"
+                    message: "Task with ID 'task-99999' was not found."
+                    details: null
+                    timestamp: "2026-09-01T08:00:00Z"
+                    path: "/api/tasks/task-99999"
+
+  /tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      summary: Confirm and execute task completion
+      description: Endpoint invoked exclusively after user confirmation dialog. Atomically sets completed=true and records completedAt ISO timestamp.
+      tags:
+        - Completion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            200_task_completed:
+              value: "task-102"
+            409_already_completed:
+              value: "task-101"
+      responses:
+        '200':
+          description: Task successfully marked as completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                200_task_completed:
+                  value:
+                    id: "task-102"
+                    userId: "user-default"
+                    title: "Deploy Gateway Update"
+                    description: null
+                    date: "2026-09-01"
+                    dueTime: null
+                    completed: true
+                    completedAt: "2026-09-01T15:30:00Z"
+                    priority: "URGENT"
+                    categoryId: "cat-2"
+                    recurrenceId: "rec-50"
+                    createdAt: "2026-08-30T09:15:00Z"
+                    updatedAt: "2026-09-01T15:30:00Z"
+        '409':
+          description: Task is already in completed state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              examples:
+                409_already_completed:
+                  value:
+                    code: "TASK_ALREADY_COMPLETED"
+                    message: "Task 'task-101' is already marked as completed."
+                    details:
+                      completedAt: "2026-09-01T14:45:00Z"
+                    timestamp: "2026-09-01T15:35:00Z"
+                    path: "/api/tasks/task-101/complete"
+
+  /tasks/{id}/uncomplete:
+    post:
+      operationId: uncompleteTask
+      summary: Revert task to incomplete state
+      tags:
+        - Completion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            200_task_uncompleted:
+              value: "task-101"
+      responses:
+        '200':
+          description: Task successfully reverted to incomplete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                200_task_uncompleted:
+                  value:
+                    id: "task-101"
+                    userId: "user-default"
+                    title: "Analyze Quarterly Metrics"
+                    description: "Review performance reports for Q3"
+                    date: "2026-09-01"
+                    dueTime: "14:30"
+                    completed: false
+                    completedAt: null
+                    priority: "HIGH"
+                    categoryId: "cat-1"
+                    recurrenceId: null
+                    createdAt: "2026-08-30T09:00:00Z"
+                    updatedAt: "2026-09-01T15:40:00Z"
+
+  /calendar/month:
+    get:
+      operationId: getMonthStatus
+      summary: Retrieve aggregated day completion status for a given month
+      description: Returns map of calendar days for specified year and month with computed status (all_completed, partially_completed, none_completed, no_tasks) and color codes.
+      tags:
+        - Calendar
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+          examples:
+            200_calendar_month_sept_2026:
+              value: 2026
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          examples:
+            200_calendar_month_sept_2026:
+              value: 9
+      responses:
+        '200':
+          description: Month day status rollup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthStatusResponse'
+              examples:
+                200_calendar_month_sept_2026:
+                  value:
+                    year: 2026
+                    month: 9
+                    days:
+                      - date: "2026-09-01"
+                        totalTasks: 3
+                        completedTasks: 3
+                        status: "all_completed"
+                        colorCode: "blue"
+                      - date: "2026-09-02"
+                        totalTasks: 4
+                        completedTasks: 1
+                        status: "partially_completed"
+                        colorCode: "yellow"
+                      - date: "2026-09-03"
+                        totalTasks: 2
+                        completedTasks: 0
+                        status: "none_completed"
+                        colorCode: "red"
+                      - date: "2026-09-04"
+                        totalTasks: 0
+                        completedTasks: 0
+                        status: "no_tasks"
+                        colorCode: "neutral"
+
+  /analytics/summary:
+    get:
+      operationId: getProductivitySummary
+      summary: Query deterministic productivity metrics and insights
+      tags:
+        - Analytics
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, yearly]
+          examples:
+            200_weekly_analytics:
+              value: "weekly"
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          examples:
+            200_weekly_analytics:
+              value: "2026-09-01"
+      responses:
+        '200':
+          description: Productivity summary data and insights
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummaryResponse'
+              examples:
+                200_weekly_analytics:
+                  value:
+                    period: "weekly"
+                    anchorDate: "2026-09-01"
+                    startDate: "2026-08-31"
+                    endDate: "2026-09-06"
+                    totalTasks: 18
+                    completedTasks: 15
+                    completionRate: 83.33
+                    mostProductiveDay: "Wednesday"
+                    missedTasks: 3
+                    priorityBreakdown:
+                      LOW: { total: 4, completed: 4 }
+                      MEDIUM: { total: 6, completed: 5 }
+                      HIGH: { total: 5, completed: 4 }
+                      URGENT: { total: 3, completed: 2 }
+                    trendData:
+                      - label: "Mon"
+                        date: "2026-08-31"
+                        total: 3
+                        completed: 3
+                      - label: "Tue"
+                        date: "2026-09-01"
+                        total: 4
+                        completed: 3
+                      - label: "Wed"
+                        date: "2026-09-02"
+                        total: 5
+                        completed: 5
+                      - label: "Thu"
+                        date: "2026-09-03"
+                        total: 2
+                        completed: 1
+                      - label: "Fri"
+                        date: "2026-09-04"
+                        total: 4
+                        completed: 3
+                    insights:
+                      - "You completed 83% of your tasks this week."
+                      - "Wednesday was your most productive day."
+                      - "Your completion rate improved by 12% compared with last week."
+
+  /categories:
+    get:
+      operationId: listCategories
+      summary: Retrieve all user categories
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+              examples:
+                200_categories_list:
+                  value:
+                    - id: "cat-1"
+                      userId: "user-default"
+                      name: "Engineering"
+                      color: "#2563EB"
+                    - id: "cat-2"
+                      userId: "user-default"
+                      name: "Operations"
+                      color: "#059669"
+
+    post:
+      operationId: createCategory
+      summary: Create a new category
+      tags:
+        - Categories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Research"
+                color:
+                  type: string
+                  pattern: '^#[0-9A-Fa-f]{6}$'
+                  example: "#475569"
+            examples:
+              201_category_created:
+                value:
+                  name: "Research"
+                  color: "#475569"
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status, timestamp, database]
+      properties:
+        status:
+          type: string
+          example: "ok"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-09-01T12:00:00Z"
+        database:
+          type: string
+          example: "connected"
+
+    PriorityLevel:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, URGENT]
+      example: "HIGH"
+
+    Task:
+      type: object
+      required:
+        - id
+        - userId
+        - title
+        - date
+        - completed
+        - priority
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: "task-101"
+        userId:
+          type: string
+          example: "user-default"
+        title:
+          type: string
+          maxLength: 200
+          example: "Analyze Quarterly Metrics"
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+          example: "Review performance reports for Q3"
+        date:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Strict calendar date YYYY-MM-DD
+          example: "2026-09-01"
+        dueTime:
+          type: string
+          nullable: true
+          pattern: '^\d{2}:\d{2}$'
+          example: "14:30"
+        completed:
+          type: boolean
+          example: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-09-01T14:45:00Z"
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+        categoryId:
+          type: string
+          nullable: true
+          example: "cat-1"
+        recurrenceId:
+          type: string
+          nullable: true
+          example: "rec-50"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-08-30T09:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-09-01T14:45:00Z"
+
+    CreateTaskRequest:
+      type: object
+      required: [title, date]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "Review System Architecture"
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+          example: "Finalize calendar schema contracts"
+        date:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: "2026-09-01"
+        dueTime:
+          type: string
+          nullable: true
+          pattern: '^\d{2}:\d{2}$'
+          example: "11:00"
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+          default: "MEDIUM"
+        categoryId:
+          type: string
+          nullable: true
+          example: "cat-1"
+        recurrenceConfig:
+          $ref: '#/components/schemas/RecurrenceConfig'
+          nullable: true
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "Analyze Quarterly Metrics - Revised"
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+        date:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        dueTime:
+          type: string
+          nullable: true
+          pattern: '^\d{2}:\d{2}$'
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+        categoryId:
+          type: string
+          nullable: true
+
+    RecurrenceConfig:
+      type: object
+      required: [frequency, interval]
+      properties:
+        frequency:
+          type: string
+          enum: [DAILY, WEEKDAYS, WEEKLY, MONTHLY]
+          example: "WEEKDAYS"
+        interval:
+          type: integer
+          minimum: 1
+          default: 1
+          example: 1
+        byWeekdays:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 7
+          nullable: true
+          example: [1, 2, 3, 4, 5]
+        untilDate:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          nullable: true
+          example: "2026-10-30"
+
+    MonthStatusResponse:
+      type: object
+      required: [year, month, days]
+      properties:
+        year:
+          type: integer
+          example: 2026
+        month:
+          type: integer
+          example: 9
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayStatusSummary'
+
+    DayStatusSummary:
+      type: object
+      required: [date, totalTasks, completedTasks, status, colorCode]
+      properties:
+        date:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: "2026-09-01"
+        totalTasks:
+          type: integer
+          minimum: 0
+          example: 3
+        completedTasks:
+          type: integer
+          minimum: 0
+          example: 3
+        status:
+          type: string
+          enum: [all_completed, partially_completed, none_completed, no_tasks]
+          example: "all_completed"
+        colorCode:
+          type: string
+          enum: [blue, yellow, red, neutral]
+          example: "blue"
+
+    AnalyticsSummaryResponse:
+      type: object
+      required:
+        - period
+        - anchorDate
+        - startDate
+        - endDate
+        - totalTasks
+        - completedTasks
+        - completionRate
+        - missedTasks
+        - priorityBreakdown
+        - trendData
+        - insights
+      properties:
+        period:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          example: "weekly"
+        anchorDate:
+          type: string
+          example: "2026-09-01"
+        startDate:
+          type: string
+          example: "2026-08-31"
+        endDate:
+          type: string
+          example: "2026-09-06"
+        totalTasks:
+          type: integer
+          example: 18
+        completedTasks:
+          type: integer
+          example: 15
+        completionRate:
+          type: number
+          format: float
+          example: 83.33
+        mostProductiveDay:
+          type: string
+          nullable: true
+          example: "Wednesday"
+        missedTasks:
+          type: integer
+          example: 3
+        priorityBreakdown:
+          type: object
+          additionalProperties:
+            type: object
+            required: [total, completed]
+            properties:
+              total:
+                type: integer
+              completed:
+                type: integer
+        trendData:
+          type: array
+          items:
+            type: object
+            required: [label, date, total, completed]
+            properties:
+              label:
+                type: string
+              date:
+                type: string
+              total:
+                type: integer
+              completed:
+                type: integer
+        insights:
+          type: array
+          items:
+            type: string
+          example:
+            - "You completed 83% of your tasks this week."
+            - "Wednesday was your most productive day."
+
+    Category:
+      type: object
+      required: [id, userId, name]
+      properties:
+        id:
+          type: string
+          example: "cat-1"
+        userId:
+          type: string
+          example: "user-default"
+        name:
+          type: string
+          example: "Engineering"
+        color:
+          type: string
+          nullable: true
+          example: "#2563EB"
+
+    StandardError:
+      type: object
+      required: [code, message, timestamp, path]
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "The requested resource was not found."
+        details:
+          type: object
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-09-01T12:00:00Z"
+        path:
+          type: string
+          example: "/api/tasks/task-99999"

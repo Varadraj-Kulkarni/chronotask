@@ -1,0 +1,14 @@
+{
+  "sources": [
+    {
+      "type": "filesystem",
+      "directory": "./contracts",
+      "stub": [
+        "contracts/backend-contract.yaml"
+      ]
+    }
+  ],
+  "stub": {
+    "port": 9000
+  }
+}

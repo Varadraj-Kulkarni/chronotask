@@ -1,0 +1,72 @@
+name: ChronoTask Provider Contract & Integration CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  SPECMATIC_VERSION: 1.3.15
+  NODE_VERSION: 20
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/chronotask_test?schema=public"
+
+jobs:
+  contract-tests:
+    name: Run Specmatic Contract Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chronotask_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Prisma Migrations & Seed
+        run: |
+          npx prisma migrate reset --force
+          npx prisma db seed
+
+      - name: Start Provider Application in Background
+        run: |
+          npm run build
+          npm run start &
+          npx wait-on http://localhost:3000/api/health --timeout 30000
+
+      - name: Setup Java for Specmatic
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Download Specmatic CLI
+        run: |
+          curl -L -o specmatic.jar https://github.com/znsio/specmatic/releases/download/${{ env.SPECMATIC_VERSION }}/specmatic.jar
+
+      - name: Run Contract Tests Against Provider
+        run: |
+          java -jar specmatic.jar test --testBaseURL=http://localhost:3000/api --config=specmatic-provider.json
+
+      - name: Run Provider Unit & Component Tests
+        run: npm run test

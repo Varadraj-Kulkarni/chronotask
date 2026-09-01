@@ -1,0 +1,14 @@
+{
+  "sources": [
+    {
+      "type": "filesystem",
+      "directory": "./contracts",
+      "test": [
+        "contracts/backend-contract.yaml"
+      ]
+    }
+  ],
+  "test": {
+    "testBaseURL": "http://localhost:3000/api"
+  }
+}
