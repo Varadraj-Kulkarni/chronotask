@@ -33,36 +33,39 @@ export function CalendarHeader({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-neutral-200 dark:border-neutral-800">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200">
+        <div className="p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md text-neutral-800 dark:text-neutral-200 flex-shrink-0">
           <CalendarIcon className="w-4 h-4" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight flex items-center gap-2">
             <span>{monthNames[month - 1]}</span>
-            <span className="font-mono text-slate-500 dark:text-slate-400 font-normal">{year}</span>
+            <span className="font-mono text-neutral-500 dark:text-neutral-400 font-normal">{year}</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
             Monthly schedule and completion velocity rollup
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Editorial Legend */}
-        <div className="hidden lg:flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-2.5 py-1 rounded-md">
+      <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-4">
+        {/* Editorial Legend - responsive on all screens */}
+        <div className="flex items-center flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 px-2 sm:px-2.5 py-1 rounded-md">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-600" /> All Done
+            <span className="w-2 h-2 rounded-full bg-blue-600" /> Done
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-500" /> Partial
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-rose-500" /> Incomplete
+            <span className="w-2 h-2 rounded-full bg-red-600" /> Today/Overdue
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" /> No Tasks
+            <span className="w-2 h-2 rounded-full bg-pink-500" /> Upcoming
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-neutral-300 dark:bg-neutral-700" /> Empty
           </span>
         </div>
 
@@ -71,19 +74,19 @@ export function CalendarHeader({
           <Button variant="outline" size="sm" onClick={onToday}>
             Today
           </Button>
-          <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900">
+          <div className="flex items-center border border-neutral-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-900 shadow-sm">
             <button
               onClick={onPrevMonth}
               aria-label="Previous month"
-              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors rounded-l-md"
+              className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors rounded-l-md min-w-[32px] min-h-[32px] flex items-center justify-center"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700" />
+            <div className="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-800" />
             <button
               onClick={onNextMonth}
               aria-label="Next month"
-              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors rounded-r-md"
+              className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors rounded-r-md min-w-[32px] min-h-[32px] flex items-center justify-center"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

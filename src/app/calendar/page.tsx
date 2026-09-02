@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { MonthlyCalendar } from "@/components/calendar/MonthlyCalendar";
 import { DailyTaskPanel } from "@/components/tasks/DailyTaskPanel";
-import { toCalendarDateString } from "@/lib/dateUtils";
+import { getTodayDateString } from "@/lib/dateUtils";
 
 export default function CalendarPage() {
-  // Default anchor date: current local date, or contract default if desired
+  // Default anchor date: India timezone aware local date
   const [selectedDate, setSelectedDate] = useState<string>(() =>
-    toCalendarDateString(new Date())
+    getTodayDateString()
   );
 
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
@@ -19,15 +19,15 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Banner Context */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             Calendar Master
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            4-tier day completion tracking & strict calendar-first workflow
+          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
+            Date-aware completion velocity & precision task engine
           </p>
         </div>
       </div>

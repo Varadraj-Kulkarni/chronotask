@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Task, Category, CreateTaskRequest, EditScope } from "@/lib/types";
-import { formatDateDisplay } from "@/lib/dateUtils";
+import { formatDateDisplay, formatToDDMMYYYY } from "@/lib/dateUtils";
 import { TaskItem } from "./TaskItem";
 import { CompletionModal } from "./CompletionModal";
 import { TaskFormModal } from "./TaskFormModal";
@@ -138,15 +138,15 @@ export function DailyTaskPanel({
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg shadow-sm overflow-hidden transition-colors">
       {/* Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+      <div className="p-3.5 sm:p-4 border-b border-neutral-200/80 dark:border-neutral-800 bg-[#F4F4F5]/60 dark:bg-neutral-900/50">
         <div className="flex items-start justify-between">
           <div>
-            <span className="text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-[11px] font-mono font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
               Daily Agenda
             </span>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
               {formatDateDisplay(dateStr)}
             </h3>
           </div>
@@ -166,7 +166,7 @@ export function DailyTaskPanel({
               <button
                 type="button"
                 onClick={onCloseMobile}
-                className="lg:hidden p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+                className="lg:hidden p-1.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 rounded hover:bg-neutral-200/60 dark:hover:bg-neutral-800 transition-colors"
                 aria-label="Close panel"
               >
                 <X className="w-4 h-4" />
@@ -176,19 +176,19 @@ export function DailyTaskPanel({
         </div>
 
         {/* Progress Bar & Metric */}
-        <div className="mt-4 pt-3 border-t border-slate-200/70 dark:border-slate-800">
+        <div className="mt-3 sm:mt-4 pt-3 border-t border-neutral-200/70 dark:border-neutral-800">
           <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="text-slate-600 dark:text-slate-400 font-medium">Completion Progress</span>
-            <span className="font-mono tabular-nums text-slate-900 dark:text-slate-100 font-semibold">
+            <span className="text-neutral-600 dark:text-neutral-400 font-medium">Completion Progress</span>
+            <span className="font-mono tabular-nums text-neutral-900 dark:text-neutral-100 font-semibold">
               {completedTasks}/{totalTasks}{" "}
-              <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">
+              <span className="text-neutral-400 dark:text-neutral-500 font-normal text-[11px]">
                 ({completionPercentage}%)
               </span>
             </span>
           </div>
-          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+          <div className="h-1.5 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden border border-neutral-200 dark:border-neutral-700">
             <div
-              className="h-full bg-slate-900 dark:bg-slate-100 transition-all duration-300 rounded-full"
+              className="h-full bg-neutral-900 dark:bg-white transition-all duration-300 rounded-full"
               style={{ width: `${completionPercentage}%` }}
             />
           </div>
@@ -196,16 +196,16 @@ export function DailyTaskPanel({
       </div>
 
       {/* Task List Content */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-2.5">
+      <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 max-h-[520px]">
         {isLoading && tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-xs">
+          <div className="flex flex-col items-center justify-center h-48 text-neutral-400 text-xs">
             Loading tasks...
           </div>
         ) : tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 border border-dashed border-slate-200 dark:border-slate-800 rounded-md p-6 text-center">
-            <ListTodo className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-2 stroke-[1.5]" />
-            <p className="text-xs font-medium text-slate-700 dark:text-slate-300">No tasks for this day</p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-[200px]">
+          <div className="flex flex-col items-center justify-center h-48 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-md p-6 text-center">
+            <ListTodo className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mb-2 stroke-[1.5]" />
+            <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">No tasks for this day</p>
+            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1 max-w-[200px]">
               Days with no tasks remain strictly neutral in calendar metrics.
             </p>
             <Button
@@ -239,11 +239,11 @@ export function DailyTaskPanel({
       </div>
 
       {/* Footer Info */}
-      <div className="p-3 border-t border-slate-100 bg-slate-50 text-[11px] text-slate-500 font-mono flex items-center justify-between">
-        <span>Date: {dateStr}</span>
+      <div className="p-3 border-t border-neutral-100 dark:border-neutral-800 bg-[#F4F4F5]/70 dark:bg-neutral-900/60 text-[11px] text-neutral-500 dark:text-neutral-400 font-mono flex items-center justify-between">
+        <span>Date: {formatToDDMMYYYY(dateStr)}</span>
         <span className="flex items-center gap-1">
-          <CheckCircle2 className="w-3 h-3 text-slate-400" />
-          Jane Street Editorial v1.0
+          <CheckCircle2 className="w-3 h-3 text-neutral-400 dark:text-neutral-500" />
+          <span>ChronoTask Precision</span>
         </span>
       </div>
 
@@ -279,8 +279,8 @@ export function DailyTaskPanel({
       >
         <div className="space-y-4">
           {deletingTask?.recurrenceId && (
-            <div className="border border-slate-200 bg-slate-50 p-3 rounded text-xs space-y-2">
-              <span className="font-semibold text-slate-900 block">
+            <div className="border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded text-xs space-y-2">
+              <span className="font-semibold text-neutral-900 dark:text-neutral-100 block">
                 Recurring Series Delete Scope:
               </span>
               <div className="space-y-1">
@@ -291,8 +291,9 @@ export function DailyTaskPanel({
                     value="single"
                     checked={deleteScope === "single"}
                     onChange={() => setDeleteScope("single")}
+                    className="text-neutral-900 dark:text-neutral-100"
                   />
-                  <span>Delete only this task</span>
+                  <span className="text-neutral-700 dark:text-neutral-300">Delete only this task</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -301,8 +302,9 @@ export function DailyTaskPanel({
                     value="future"
                     checked={deleteScope === "future"}
                     onChange={() => setDeleteScope("future")}
+                    className="text-neutral-900 dark:text-neutral-100"
                   />
-                  <span>Delete this and future occurrences</span>
+                  <span className="text-neutral-700 dark:text-neutral-300">Delete this and future occurrences</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -311,8 +313,9 @@ export function DailyTaskPanel({
                     value="all"
                     checked={deleteScope === "all"}
                     onChange={() => setDeleteScope("all")}
+                    className="text-neutral-900 dark:text-neutral-100"
                   />
-                  <span>Delete all occurrences</span>
+                  <span className="text-neutral-700 dark:text-neutral-300">Delete all occurrences</span>
                 </label>
               </div>
             </div>

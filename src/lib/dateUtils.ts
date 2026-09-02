@@ -1,6 +1,23 @@
 import { DayState, ColorCode } from "./types";
 
 /**
+ * Returns today's calendar date string (YYYY-MM-DD) in Asia/Kolkata (India) timezone.
+ */
+export function getTodayDateString(): string {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(new Date());
+  } catch {
+    return toCalendarDateString(new Date());
+  }
+}
+
+/**
  * Strict calendar date string generator (YYYY-MM-DD) from local date components.
  * Guarantees zero timezone shifting compared to date.toISOString().
  */
@@ -12,6 +29,31 @@ export function toCalendarDateString(d: Date): string {
 }
 
 /**
+ * Converts a YYYY-MM-DD string into strict DD-MM-YYYY format.
+ * E.g., "2026-09-02" -> "02-09-2026"
+ */
+export function formatToDDMMYYYY(dateStr: string): string {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3 && parts[0].length === 4) {
+    return `${parts[2].padStart(2, "0")}-${parts[1].padStart(2, "0")}-${parts[0]}`;
+  }
+  return dateStr;
+}
+
+/**
+ * Converts a DD-MM-YYYY string back to YYYY-MM-DD.
+ */
+export function parseDDMMYYYYToISO(dateStr: string): string {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
+    return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  }
+  return dateStr;
+}
+
+/**
  * Parses a YYYY-MM-DD string into a local Date object.
  */
 export function parseCalendarDateString(dateStr: string): Date {
@@ -20,32 +62,33 @@ export function parseCalendarDateString(dateStr: string): Date {
 }
 
 /**
- * Returns formatted human-readable date for headers and dialogs.
- * E.g., "Tuesday, Sep 1, 2026"
+ * Returns formatted date for headers and dialogs using strict dd-mm-yyyy representation.
+ * E.g., short: "02-09-2026", default: "Wednesday, 02-09-2026"
  */
 export function formatDateDisplay(dateStr: string, options?: { short?: boolean }): string {
+  if (!dateStr) return "";
   const d = parseCalendarDateString(dateStr);
+  const ddmm = formatToDDMMYYYY(dateStr);
   if (options?.short) {
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return ddmm;
   }
-  return d.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const weekday = d.toLocaleDateString("en-US", { weekday: "long" });
+  return `${weekday}, ${ddmm}`;
 }
 
 /**
- * Computes the 4-state calendar color logic strictly per contract:
+ * Computes calendar day status color logic:
  * - All Completed: totalTasks > 0 and completedTasks == totalTasks -> blue
  * - Partially Completed: totalTasks > 0 and completedTasks > 0 and completedTasks < totalTasks -> yellow
- * - None Completed: totalTasks > 0 and completedTasks == 0 -> red
+ * - None Completed (Future Date): date > today -> pink (rose pink)
+ * - None Completed (Today or Past Date): date <= today -> red
  * - No Tasks: totalTasks == 0 -> neutral
  */
 export function computeDayStatus(
   totalTasks: number,
-  completedTasks: number
+  completedTasks: number,
+  dateStr?: string,
+  todayStr?: string
 ): { status: DayState; colorCode: ColorCode; label: string } {
   if (totalTasks === 0) {
     return {
@@ -71,6 +114,16 @@ export function computeDayStatus(
     };
   }
 
+  // When all tasks are incomplete (completedTasks === 0):
+  const today = todayStr || getTodayDateString();
+  if (dateStr && dateStr > today) {
+    return {
+      status: "future_incomplete",
+      colorCode: "pink",
+      label: `Upcoming tasks scheduled (0 of ${totalTasks})`,
+    };
+  }
+
   return {
     status: "none_completed",
     colorCode: "red",
@@ -93,7 +146,7 @@ export function getMonthGrid(year: number, month: number): CalendarGridCell[] {
   const lastDay = new Date(year, month, 0);
   const totalDays = lastDay.getDate();
 
-  const todayStr = toCalendarDateString(new Date());
+  const todayStr = getTodayDateString();
 
   // Monday = 0, Sunday = 6 in European/ISO standard week
   // JS getDay(): 0 is Sunday, 1 is Monday...
@@ -164,5 +217,19 @@ export function getWeekRange(dateStr: string): { start: string; end: string; day
     start: days[0],
     end: days[6],
     days,
+  };
+}
+
+/**
+ * Returns start and end dates for a given anchor date's calendar month.
+ */
+export function getMonthRange(dateStr: string): { start: string; end: string } {
+  const [yearStr, monthStr] = dateStr.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const lastDay = new Date(year, month, 0).getDate();
+  return {
+    start: `${year}-${String(month).padStart(2, "0")}-01`,
+    end: `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`,
   };
 }

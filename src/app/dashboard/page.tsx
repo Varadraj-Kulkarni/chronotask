@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AnalyticsPeriod, AnalyticsSummaryResponse } from "@/lib/types";
 import { api } from "@/lib/api";
-import { toCalendarDateString, formatDateDisplay } from "@/lib/dateUtils";
+import { toCalendarDateString, formatDateDisplay, formatToDDMMYYYY, getTodayDateString } from "@/lib/dateUtils";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { ProductivityTrend } from "@/components/dashboard/ProductivityTrend";
 import { PriorityDistribution } from "@/components/dashboard/PriorityDistribution";
@@ -15,7 +15,7 @@ import { clsx } from "clsx";
 export default function DashboardPage() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("weekly");
   const [activeDate, setActiveDate] = useState<string>(() =>
-    toCalendarDateString(new Date())
+    getTodayDateString()
   );
   const [data, setData] = useState<AnalyticsSummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -44,31 +44,31 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header & Timescale Segmented Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-neutral-200 dark:border-neutral-800">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             Productivity Analytics
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
             Deterministic velocity metrics across multi-timescale horizons
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Segmented Control */}
-          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
+          <div className="flex items-center p-1 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md">
             {periods.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => setPeriod(p.id)}
                 className={clsx(
-                  "px-3 py-1 text-xs font-medium rounded transition-all",
+                  "px-2.5 sm:px-3 py-1 text-xs font-medium rounded transition-all",
                   period === p.id
-                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm font-semibold"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                    ? "bg-white dark:bg-[#121214] text-neutral-900 dark:text-neutral-100 shadow-sm font-semibold"
+                    : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
                 )}
               >
                 {p.label}
@@ -88,13 +88,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Date Horizon Callout */}
+      {/* Date Horizon Callout with dd-mm-yyyy formatting */}
       {data && (
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
-          <Calendar className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 text-xs font-mono text-neutral-500 dark:text-neutral-400 flex-wrap">
+          <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
           <span>
-            Active Horizon: {data.startDate} &mdash; {data.endDate} (Anchor:{" "}
-            {data.anchorDate})
+            Active Horizon: <span className="text-neutral-700 dark:text-neutral-300 font-semibold">{formatToDDMMYYYY(data.startDate)}</span> &mdash; <span className="text-neutral-700 dark:text-neutral-300 font-semibold">{formatToDDMMYYYY(data.endDate)}</span> (Anchor:{" "}
+            <span className="text-neutral-700 dark:text-neutral-300 font-semibold">{formatToDDMMYYYY(data.anchorDate)}</span>)
           </span>
         </div>
       )}

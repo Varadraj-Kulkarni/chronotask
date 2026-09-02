@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarCell } from "./CalendarCell";
-import { getMonthGrid, toCalendarDateString } from "@/lib/dateUtils";
+import { getMonthGrid, toCalendarDateString, getTodayDateString } from "@/lib/dateUtils";
 import { api } from "@/lib/api";
 import { MonthStatusResponse } from "@/lib/types";
 
@@ -81,18 +81,25 @@ export function MonthlyCalendar({
   };
 
   const handleToday = () => {
-    const today = new Date();
-    const todayYear = today.getFullYear();
-    const todayMonth = today.getMonth() + 1;
-    setCurrentYear(todayYear);
-    setCurrentMonth(todayMonth);
-    onSelectDate(toCalendarDateString(today));
+    const todayStr = getTodayDateString();
+    const [y, m] = todayStr.split("-").map(Number);
+    setCurrentYear(y);
+    setCurrentMonth(m);
+    onSelectDate(todayStr);
   };
 
-  const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weekdays = [
+    { short: "M", full: "Mon" },
+    { short: "T", full: "Tue" },
+    { short: "W", full: "Wed" },
+    { short: "T", full: "Thu" },
+    { short: "F", full: "Fri" },
+    { short: "S", full: "Sat" },
+    { short: "S", full: "Sun" },
+  ];
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+    <div className="bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg p-3 sm:p-5 shadow-sm transition-colors">
       <CalendarHeader
         year={currentYear}
         month={currentMonth}
@@ -102,13 +109,14 @@ export function MonthlyCalendar({
       />
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 mt-4 mb-1">
-        {weekdays.map((day) => (
+      <div className="grid grid-cols-7 gap-1 mt-3 sm:mt-4 mb-1">
+        {weekdays.map((day, idx) => (
           <div
-            key={day}
-            className="py-1 text-center text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+            key={idx}
+            className="py-1 text-center text-[10px] sm:text-[11px] font-mono font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider"
           >
-            {day}
+            <span className="sm:hidden">{day.short}</span>
+            <span className="hidden sm:inline">{day.full}</span>
           </div>
         ))}
       </div>

@@ -1,13 +1,26 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { CalendarDays, CheckSquare, BarChart3, Activity } from "lucide-react";
+import { CalendarDays, CheckSquare, BarChart3 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 
 export const metadata: Metadata = {
   title: "ChronoTask — Calendar-Based Task Manager",
   description:
-    "Restrained, technical, editorial calendar task manager inspired by Jane Street visual philosophy.",
+    "Precision calendar task manager with deliberate completion tracking & analytics.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({
@@ -16,77 +29,77 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
                 const theme = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (theme === 'dark' || (!theme && prefersDark)) {
-                  document.documentElement.classList.add('dark');
-                } else {
+                // Default to dark mode unless explicitly set to light
+                if (theme === 'light') {
                   document.documentElement.classList.remove('dark');
+                } else {
+                  document.documentElement.classList.add('dark');
                 }
-              } catch (e) {}
+              } catch (e) {
+                document.documentElement.classList.add('dark');
+              }
             `,
           }}
         />
       </head>
-      <body className="min-h-screen flex flex-col antialiased bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-150">
+      <body className="min-h-screen flex flex-col antialiased bg-[#F4F4F5] dark:bg-[#09090B] text-neutral-900 dark:text-neutral-100 transition-colors duration-150 selection:bg-neutral-800 selection:text-white">
         {/* Editorial Top Navigation Header */}
-        <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 transition-colors duration-150">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              {/* Brand */}
-              <Link href="/calendar" className="flex items-center gap-2 group">
-                <div className="w-7 h-7 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded flex items-center justify-center font-mono font-bold text-xs shadow-sm">
-                  CT
-                </div>
+        <header className="sticky top-0 z-40 bg-[#FAFAF9]/90 dark:bg-[#121214]/90 backdrop-blur-md border-b border-neutral-200/90 dark:border-neutral-800 transition-colors duration-150">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+              {/* Brand with Modern Minimal Logo */}
+              <Link href="/calendar" className="flex items-center gap-2 group flex-shrink-0">
+                <Logo size="md" />
                 <div className="flex flex-col">
-                  <span className="font-semibold text-sm tracking-tight text-slate-900 dark:text-slate-100 leading-none">
+                  <span className="font-semibold text-sm tracking-tight text-neutral-900 dark:text-neutral-100 leading-none group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     ChronoTask
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 leading-none mt-0.5">
-                    Platform v1.0.0
+                  <span className="text-[9px] sm:text-[10px] font-mono text-neutral-400 dark:text-neutral-500 leading-none mt-0.5">
+                    Platform v1.0
                   </span>
                 </div>
               </Link>
 
-              {/* Navigation Links */}
-              <nav className="flex items-center gap-1">
+              {/* Navigation Links - Mobile Touch Optimized */}
+              <nav className="flex items-center gap-0.5 sm:gap-1">
                 <Link
                   href="/calendar"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/80 rounded-md transition-colors"
                 >
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  <span>Calendar</span>
+                  <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="hidden xs:inline sm:inline">Calendar</span>
                 </Link>
 
                 <Link
                   href="/tasks"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/80 rounded-md transition-colors"
                 >
-                  <CheckSquare className="w-3.5 h-3.5" />
-                  <span>Tasks</span>
+                  <CheckSquare className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="hidden xs:inline sm:inline">Tasks</span>
                 </Link>
 
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/80 rounded-md transition-colors"
                 >
-                  <BarChart3 className="w-3.5 h-3.5" />
-                  <span>Analytics</span>
+                  <BarChart3 className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="hidden xs:inline sm:inline">Analytics</span>
                 </Link>
               </nav>
             </div>
 
             {/* Right Status Indicator & Theme Toggle */}
-            <div className="flex items-center gap-2.5">
-              <div className="hidden sm:flex items-center gap-2 px-2 py-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded text-[11px] font-mono text-slate-600 dark:text-slate-300">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="hidden md:flex items-center gap-2 px-2 py-1 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-[11px] font-mono text-neutral-600 dark:text-neutral-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>SPEC v1.0.0 ACTIVE</span>
+                <span>IST UTC+5:30</span>
               </div>
               <ThemeToggle />
             </div>
@@ -94,7 +107,7 @@ export default function RootLayout({
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {children}
         </main>
       </body>

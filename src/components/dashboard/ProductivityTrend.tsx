@@ -10,6 +10,7 @@ import {
   Legend,
 } from "recharts";
 import { TrendDataItem } from "@/lib/types";
+import { formatToDDMMYYYY } from "@/lib/dateUtils";
 
 export interface ProductivityTrendProps {
   data: TrendDataItem[];
@@ -18,11 +19,11 @@ export interface ProductivityTrendProps {
 
 export function ProductivityTrend({ data, period }: ProductivityTrendProps) {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+    <div className="bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg p-3.5 sm:p-5 shadow-sm transition-colors">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Completion Trend</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Completion Trend</h3>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Completed vs Total volume across the {period} timeframe
           </p>
         </div>
@@ -31,25 +32,32 @@ export function ProductivityTrend({ data, period }: ProductivityTrendProps) {
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.2} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#71717A" strokeOpacity={0.15} />
             <XAxis
               dataKey="label"
               tickLine={false}
-              axisLine={{ stroke: "#94A3B8", strokeOpacity: 0.3 }}
-              tick={{ fill: "#94A3B8", fontSize: 11, fontFamily: "monospace" }}
+              axisLine={{ stroke: "#71717A", strokeOpacity: 0.25 }}
+              tick={{ fill: "#71717A", fontSize: 10, fontFamily: "Inter, -apple-system, sans-serif" }}
+              tickFormatter={(val: string) => {
+                if (val && val.includes("-") && val.length === 10) {
+                  return formatToDDMMYYYY(val).substring(0, 5); // display dd-mm for compact mobile bar chart
+                }
+                return val;
+              }}
             />
             <YAxis
               tickLine={false}
-              axisLine={{ stroke: "#94A3B8", strokeOpacity: 0.3 }}
-              tick={{ fill: "#94A3B8", fontSize: 11, fontFamily: "monospace" }}
+              axisLine={{ stroke: "#71717A", strokeOpacity: 0.25 }}
+              tick={{ fill: "#71717A", fontSize: 10, fontFamily: "Inter, -apple-system, sans-serif" }}
               allowDecimals={false}
             />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
+                  const displayLabel = label && label.includes("-") && label.length === 10 ? formatToDDMMYYYY(label) : label;
                   return (
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md rounded p-2 text-xs font-mono">
-                      <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">{label}</p>
+                    <div className="bg-[#FAFAF9] dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-lg rounded-lg p-2.5 text-xs">
+                      <p className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">{displayLabel}</p>
                       {payload.map((entry: any) => (
                         <p key={entry.dataKey} style={{ color: entry.color }}>
                           {entry.name}: {entry.value}
@@ -62,20 +70,20 @@ export function ProductivityTrend({ data, period }: ProductivityTrendProps) {
               }}
             />
             <Legend
-              wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
+              wrapperStyle={{ fontSize: 11, paddingTop: 10, fontFamily: "Inter, -apple-system, sans-serif" }}
               iconType="square"
               iconSize={8}
             />
             <Bar
               dataKey="total"
               name="Total Tasks"
-              fill="#94A3B8"
+              fill="#A1A1AA"
               radius={[2, 2, 0, 0]}
             />
             <Bar
               dataKey="completed"
               name="Completed"
-              fill="#3B82F6"
+              fill="#2563EB"
               radius={[2, 2, 0, 0]}
             />
           </BarChart>

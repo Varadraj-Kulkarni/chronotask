@@ -1,8 +1,8 @@
 export type PriorityLevel = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
-export type DayState = "all_completed" | "partially_completed" | "none_completed" | "no_tasks";
+export type DayState = "all_completed" | "partially_completed" | "none_completed" | "future_incomplete" | "no_tasks";
 
-export type ColorCode = "blue" | "yellow" | "red" | "neutral";
+export type ColorCode = "blue" | "yellow" | "red" | "pink" | "neutral";
 
 export type RecurrenceFrequency = "DAILY" | "WEEKDAYS" | "WEEKLY" | "MONTHLY";
 

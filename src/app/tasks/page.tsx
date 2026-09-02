@@ -4,19 +4,32 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Task, Category, PriorityLevel, CreateTaskRequest, EditScope } from "@/lib/types";
 import { api } from "@/lib/api";
 import { TaskItem } from "@/components/tasks/TaskItem";
+import { GroupedTaskItem } from "@/components/tasks/GroupedTaskItem";
 import { CompletionModal } from "@/components/tasks/CompletionModal";
 import { TaskFormModal } from "@/components/tasks/TaskFormModal";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { toCalendarDateString } from "@/lib/dateUtils";
-import { Search, Plus, Filter, ListChecks } from "lucide-react";
+import {
+  getTodayDateString,
+  getWeekRange,
+  getMonthRange,
+  formatToDDMMYYYY,
+  formatDateDisplay,
+} from "@/lib/dateUtils";
+import { Search, Plus, Filter, ListChecks, Calendar } from "lucide-react";
+import { clsx } from "clsx";
+
+export type TaskHorizon = "TODAY" | "THIS_WEEK" | "THIS_MONTH";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filters
+  // Date Range Horizon Filter (Today default as required)
+  const [horizon, setHorizon] = useState<TaskHorizon>("TODAY");
+
+  // Existing Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -115,8 +128,37 @@ export default function TasksPage() {
     [categories]
   );
 
+  const todayStr = useMemo(() => getTodayDateString(), []);
+  const weekRange = useMemo(() => getWeekRange(todayStr), [todayStr]);
+  const monthRange = useMemo(() => getMonthRange(todayStr), [todayStr]);
+
+  // Counts for each horizon tab
+  const horizonCounts = useMemo(() => {
+    let todayCount = 0;
+    let weekCount = 0;
+    let monthCount = 0;
+
+    for (const t of tasks) {
+      if (t.date === todayStr) todayCount++;
+      if (t.date >= weekRange.start && t.date <= weekRange.end) weekCount++;
+      if (t.date >= monthRange.start && t.date <= monthRange.end) monthCount++;
+    }
+
+    return { todayCount, weekCount, monthCount };
+  }, [tasks, todayStr, weekRange, monthRange]);
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
+      // 1. Horizon Filter (Today is default)
+      if (horizon === "TODAY") {
+        if (task.date !== todayStr) return false;
+      } else if (horizon === "THIS_WEEK") {
+        if (task.date < weekRange.start || task.date > weekRange.end) return false;
+      } else if (horizon === "THIS_MONTH") {
+        if (task.date < monthRange.start || task.date > monthRange.end) return false;
+      }
+
+      // 2. Search Query Filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitle = task.title.toLowerCase().includes(q);
@@ -124,27 +166,86 @@ export default function TasksPage() {
         if (!matchesTitle && !matchesDesc) return false;
       }
 
+      // 3. Priority Filter
       if (priorityFilter !== "ALL" && task.priority !== priorityFilter) {
         return false;
       }
 
+      // 4. Status Filter
       if (statusFilter === "COMPLETED" && !task.completed) return false;
       if (statusFilter === "INCOMPLETE" && task.completed) return false;
 
       return true;
     });
-  }, [tasks, searchQuery, priorityFilter, statusFilter]);
+  }, [tasks, horizon, todayStr, weekRange, monthRange, searchQuery, priorityFilter, statusFilter]);
+
+  // Group repeated tasks for "This Week" and "This Month" views
+  type TaskDisplayEntry =
+    | { type: "single"; task: Task }
+    | { type: "grouped"; key: string; tasks: Task[] };
+
+  const displayEntries = useMemo<TaskDisplayEntry[]>(() => {
+    if (horizon === "TODAY") {
+      // In Today's view, show individual tasks directly
+      return filteredTasks.map((t) => ({ type: "single", task: t }));
+    }
+
+    // In This Week & This Month: group repeated tasks to prevent duplicate clutter
+    const groups = new Map<string, Task[]>();
+    const singles: Task[] = [];
+
+    for (const task of filteredTasks) {
+      // Group by recurrenceId if available, or by title + category if recurring
+      const groupKey = task.recurrenceId
+        ? `rec-${task.recurrenceId}`
+        : task.title
+        ? `title-${task.title.toLowerCase().trim()}:::${task.categoryId || ""}`
+        : null;
+
+      if (groupKey) {
+        const existing = groups.get(groupKey) || [];
+        existing.push(task);
+        groups.set(groupKey, existing);
+      } else {
+        singles.push(task);
+      }
+    }
+
+    const result: TaskDisplayEntry[] = [];
+
+    // Any group with > 1 occurrence becomes a GroupedTaskItem
+    groups.forEach((groupTasks, key) => {
+      if (groupTasks.length > 1) {
+        result.push({ type: "grouped", key, tasks: groupTasks });
+      } else if (groupTasks.length === 1) {
+        result.push({ type: "single", task: groupTasks[0] });
+      }
+    });
+
+    for (const s of singles) {
+      result.push({ type: "single", task: s });
+    }
+
+    // Sort chronologically by date
+    result.sort((a, b) => {
+      const dateA = a.type === "single" ? a.task.date : a.tasks[0]?.date || "";
+      const dateB = b.type === "single" ? b.task.date : b.tasks[0]?.date || "";
+      return dateA.localeCompare(dateB);
+    });
+
+    return result;
+  }, [filteredTasks, horizon]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-neutral-200/90 dark:border-neutral-800">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             Task Registry
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Unified chronological task backlog and filter engine
+          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
+            Unified chronological task backlog, date range horizons, and multi-filter engine
           </p>
         </div>
 
@@ -155,35 +256,88 @@ export default function TasksPage() {
             setEditingTask(null);
             setIsFormOpen(true);
           }}
+          className="self-start sm:self-auto"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Task</span>
         </Button>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-4 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+      {/* Date Range Selector Segmented Control (Today / This Week / This Month) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+        <div className="flex items-center p-1 bg-neutral-200/60 dark:bg-neutral-800/80 border border-neutral-300/70 dark:border-neutral-700/80 rounded-lg w-full sm:w-auto">
+          {(
+            [
+              { id: "TODAY", label: "Today", count: horizonCounts.todayCount },
+              { id: "THIS_WEEK", label: "This Week", count: horizonCounts.weekCount },
+              { id: "THIS_MONTH", label: "This Month", count: horizonCounts.monthCount },
+            ] as const
+          ).map((tab) => {
+            const isActive = horizon === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setHorizon(tab.id)}
+                className={clsx(
+                  "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-medium rounded-md transition-all",
+                  isActive
+                    ? "bg-[#FAFAF9] dark:bg-[#141416] text-neutral-900 dark:text-neutral-100 shadow-sm font-semibold"
+                    : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+                )}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={clsx(
+                    "text-[10px] px-1.5 py-0.2 rounded-full",
+                    isActive
+                      ? "bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-semibold"
+                      : "bg-neutral-200/50 dark:bg-neutral-700/50 text-neutral-500 dark:text-neutral-400"
+                  )}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Date horizon callout */}
+        <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>
+            {horizon === "TODAY" && `Today (${formatDateDisplay(todayStr)})`}
+            {horizon === "THIS_WEEK" &&
+              `Week: ${formatToDDMMYYYY(weekRange.start)} — ${formatToDDMMYYYY(weekRange.end)}`}
+            {horizon === "THIS_MONTH" &&
+              `Month: ${formatToDDMMYYYY(monthRange.start)} — ${formatToDDMMYYYY(monthRange.end)}`}
+          </span>
+        </div>
+      </div>
+
+      {/* Filter Bar - Mobile responsive stack */}
+      <div className="bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg p-3 sm:p-4 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between transition-colors">
         {/* Search */}
         <div className="relative w-full md:w-80">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400 dark:text-slate-500" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-3 text-neutral-400 dark:text-neutral-500" />
           <input
             type="text"
             placeholder="Search by title or details..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-8 pl-8 pr-3 text-xs border border-slate-300 dark:border-slate-700 rounded focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            className="w-full h-9 pl-8 pr-3 text-xs border border-neutral-300 dark:border-neutral-700 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 bg-[#F4F4F5] dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:bg-white dark:focus:bg-neutral-800"
           />
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-            <Filter className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-            <span>Priority:</span>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-300 flex-1 sm:flex-initial">
+            <Filter className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+            <span className="hidden xs:inline">Priority:</span>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="h-8 px-2 border border-slate-300 dark:border-slate-700 rounded text-xs bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
+              className="w-full sm:w-auto h-9 px-2 border border-neutral-300 dark:border-neutral-700 rounded-md text-xs bg-[#F4F4F5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:bg-white dark:focus:bg-neutral-800"
             >
               <option value="ALL">All Priorities</option>
               <option value="LOW">Low</option>
@@ -193,12 +347,12 @@ export default function TasksPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-            <span>Status:</span>
+          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-300 flex-1 sm:flex-initial">
+            <span className="hidden xs:inline">Status:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-8 px-2 border border-slate-300 dark:border-slate-700 rounded text-xs bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
+              className="w-full sm:w-auto h-9 px-2 border border-neutral-300 dark:border-neutral-700 rounded-md text-xs bg-[#F4F4F5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:bg-white dark:focus:bg-neutral-800"
             >
               <option value="ALL">All Statuses</option>
               <option value="INCOMPLETE">Incomplete</option>
@@ -208,36 +362,70 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Task List */}
+      {/* Task List (With Grouped Repeated Tasks for Week/Month) */}
       <div className="space-y-2.5">
         {isLoading && tasks.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">Loading tasks...</div>
-        ) : filteredTasks.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-10 text-center">
-            <ListChecks className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No tasks found</p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+          <div className="p-8 text-center text-xs text-neutral-500 dark:text-neutral-400">
+            Loading tasks...
+          </div>
+        ) : displayEntries.length === 0 ? (
+          <div className="bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg p-8 sm:p-10 text-center transition-colors">
+            <ListChecks className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+              {horizon === "TODAY"
+                ? "No tasks scheduled for today"
+                : horizon === "THIS_WEEK"
+                ? "No tasks found for this week"
+                : "No tasks found for this month"}
+            </p>
+            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
               Adjust your search filters or schedule a new task.
             </p>
           </div>
         ) : (
-          filteredTasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              category={task.categoryId ? categoryMap.get(task.categoryId) : undefined}
-              onInitiateComplete={handleInitiateComplete}
-              onUncomplete={handleUncomplete}
-              onEdit={(t) => {
-                setEditingTask(t);
-                setIsFormOpen(true);
-              }}
-              onDelete={(t) => {
-                setDeletingTask(t);
-                setDeleteScope("single");
-              }}
-            />
-          ))
+          displayEntries.map((entry) => {
+            if (entry.type === "grouped") {
+              const first = entry.tasks[0];
+              const category = first?.categoryId ? categoryMap.get(first.categoryId) : undefined;
+              return (
+                <GroupedTaskItem
+                  key={entry.key}
+                  tasks={entry.tasks}
+                  category={category}
+                  onInitiateComplete={handleInitiateComplete}
+                  onUncomplete={handleUncomplete}
+                  onEdit={(t) => {
+                    setEditingTask(t);
+                    setIsFormOpen(true);
+                  }}
+                  onDelete={(t) => {
+                    setDeletingTask(t);
+                    setDeleteScope(t.recurrenceId ? "all" : "single");
+                  }}
+                />
+              );
+            }
+
+            const task = entry.task;
+            return (
+              <TaskItem
+                key={task.id}
+                task={task}
+                category={task.categoryId ? categoryMap.get(task.categoryId) : undefined}
+                showDate={horizon !== "TODAY"}
+                onInitiateComplete={handleInitiateComplete}
+                onUncomplete={handleUncomplete}
+                onEdit={(t) => {
+                  setEditingTask(t);
+                  setIsFormOpen(true);
+                }}
+                onDelete={(t) => {
+                  setDeletingTask(t);
+                  setDeleteScope("single");
+                }}
+              />
+            );
+          })
         )}
       </div>
 
@@ -258,7 +446,7 @@ export default function TasksPage() {
           setEditingTask(null);
         }}
         onSubmit={handleFormSubmit}
-        initialDate={toCalendarDateString(new Date())}
+        initialDate={todayStr}
         initialTask={editingTask}
         categories={categories}
       />

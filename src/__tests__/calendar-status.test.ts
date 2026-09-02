@@ -29,4 +29,23 @@ describe("Deliverable 2.2 & 8: Calendar Day Status Color System", () => {
     expect(result.colorCode).toBe("neutral");
     expect(result.label).toBe("No tasks scheduled");
   });
+
+  it("renders pink indicator (future_incomplete) when tasks are scheduled for future date", () => {
+    const result = computeDayStatus(3, 0, "2026-09-10", "2026-09-02");
+    expect(result.status).toBe("future_incomplete");
+    expect(result.colorCode).toBe("pink");
+    expect(result.label).toContain("Upcoming tasks");
+  });
+
+  it("renders red indicator (none_completed) when tasks are due today and incomplete", () => {
+    const result = computeDayStatus(2, 0, "2026-09-02", "2026-09-02");
+    expect(result.status).toBe("none_completed");
+    expect(result.colorCode).toBe("red");
+  });
+
+  it("renders red indicator (none_completed) when tasks are overdue (past date) and incomplete", () => {
+    const result = computeDayStatus(2, 0, "2026-08-30", "2026-09-02");
+    expect(result.status).toBe("none_completed");
+    expect(result.colorCode).toBe("red");
+  });
 });

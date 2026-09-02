@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
 import { Task } from "@/lib/types";
 import { formatDateDisplay } from "@/lib/dateUtils";
@@ -20,6 +21,11 @@ export function CompletionModal({
   isLoading = false,
 }: CompletionModalProps) {
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -46,11 +52,11 @@ export function CompletionModal({
     };
   }, [isOpen, onCancel, onConfirm]);
 
-  if (!isOpen || !task) return null;
+  if (!isOpen || !task || !mounted) return null;
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-[1px] animate-in fade-in duration-100"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-[3px] animate-in fade-in duration-100"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) onCancel();
       }}
@@ -60,30 +66,30 @@ export function CompletionModal({
         aria-modal="true"
         aria-labelledby="completion-dialog-title"
         aria-describedby="completion-dialog-body"
-        className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-xl overflow-hidden p-6 animate-in zoom-in-95 duration-100"
+        className="w-full max-w-md bg-[#FAFAF9] dark:bg-[#141416] border border-neutral-200/90 dark:border-neutral-800 rounded-xl shadow-2xl overflow-hidden p-5 sm:p-6 animate-in zoom-in-95 duration-100"
       >
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-md border border-blue-100 dark:border-blue-900 mt-0.5">
+          <div className="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-md border border-blue-100 dark:border-blue-900/50 mt-0.5 flex-shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <h3 id="completion-dialog-title" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <h3 id="completion-dialog-title" className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
               Complete Task?
             </h3>
-            <p id="completion-dialog-body" className="mt-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Mark &ldquo;<span className="font-semibold text-slate-900 dark:text-slate-100">{task.title}</span>&rdquo; as completed for{" "}
-              <span className="font-mono text-slate-800 dark:text-slate-200 font-medium">
+            <p id="completion-dialog-body" className="mt-2 text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed">
+              Mark &ldquo;<span className="font-semibold text-neutral-900 dark:text-neutral-100">{task.title}</span>&rdquo; as completed for{" "}
+              <span className="font-mono text-neutral-800 dark:text-neutral-200 font-medium">
                 {formatDateDisplay(task.date, { short: true })}
               </span>
               ?
             </p>
-            <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+            <p className="mt-1 text-[11px] text-neutral-400 dark:text-neutral-500">
               This action updates historical completion velocity for this calendar date.
             </p>
           </div>
         </div>
 
-        <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+        <div className="mt-6 flex items-center justify-end gap-2 border-t border-neutral-100 dark:border-neutral-800 pt-4">
           <Button
             type="button"
             variant="outline"
@@ -91,7 +97,7 @@ export function CompletionModal({
             onClick={onCancel}
             disabled={isLoading}
           >
-            Cancel <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono ml-1">(Esc)</span>
+            Cancel <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono ml-1 hidden xs:inline">(Esc)</span>
           </Button>
           <Button
             ref={confirmBtnRef}
@@ -103,10 +109,12 @@ export function CompletionModal({
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isLoading ? "Saving..." : "Confirm"}
-            <span className="text-[10px] text-blue-200 font-mono ml-1">(Enter)</span>
+            <span className="text-[10px] text-blue-200 font-mono ml-1 hidden xs:inline">(Enter)</span>
           </Button>
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
