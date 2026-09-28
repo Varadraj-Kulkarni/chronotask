@@ -4,14 +4,16 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { TaskItem } from "@/components/tasks/TaskItem";
 import { CompletionModal } from "@/components/tasks/CompletionModal";
-import { Task } from "@/lib/types";
+import { toCalendarDateString } from "@/lib/dateUtils";
+
+const todayStr = toCalendarDateString(new Date());
 
 const mockTask: Task = {
   id: "task-102",
   userId: "user-default",
   title: "Deploy Gateway Update",
   description: "Verify canary deployments",
-  date: "2026-09-01",
+  date: todayStr,
   dueTime: null,
   completed: false,
   completedAt: null,
@@ -91,5 +93,33 @@ describe("Deliverable 3 & 8: Two-Step Completion Confirmation Workflow", () => {
     const confirmBtn = screen.getByText(/Confirm/i);
     fireEvent.click(confirmBtn);
     expect(handleConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders overdue options when completing a past task", () => {
+    const handleConfirm = vi.fn();
+    const handleCancel = vi.fn();
+
+    const overdueTask: Task = {
+      ...mockTask,
+      date: "2026-08-15",
+    };
+
+    render(
+      <CompletionModal
+        task={overdueTask}
+        isOpen={true}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    );
+
+    expect(screen.getByText("Complete Overdue Task?")).toBeDefined();
+
+    const postponeBtn = screen.getByRole("button", {
+      name: /Complete & Postpone to Today/i,
+    });
+    expect(postponeBtn).toBeDefined();
+    fireEvent.click(postponeBtn);
+    expect(handleConfirm).toHaveBeenCalledWith(true);
   });
 });

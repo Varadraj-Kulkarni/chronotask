@@ -10,6 +10,8 @@ export interface TrendItem {
   date: string;
   total: number;
   completed: number;
+  completionRate: number;
+  pending: number;
 }
 
 export interface AnalyticsResult {
@@ -110,13 +112,17 @@ export function computeAnalytics(
   const trendData: TrendItem[] = [];
   const dayCompletionCount: Record<string, number> = {};
 
+  const makeItem = (label: string, date: string, total: number, completed: number): TrendItem => ({
+    label,
+    date,
+    total,
+    completed,
+    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+    pending: Math.max(0, total - completed),
+  });
+
   if (period === 'daily') {
-    trendData.push({
-      label: anchorDate,
-      date: anchorDate,
-      total: totalTasks,
-      completed: completedTasks,
-    });
+    trendData.push(makeItem(anchorDate, anchorDate, totalTasks, completedTasks));
     if (completedTasks > 0) {
       const dow = getDayOfWeek(anchorDate);
       dayCompletionCount[DAY_NAMES[dow - 1]] = completedTasks;
@@ -126,12 +132,7 @@ export function computeAnalytics(
     for (let i = 0; i < 7; i++) {
       const dayTasks = periodTasks.filter((t) => t.date === curr);
       const dayCompleted = dayTasks.filter((t) => t.completed).length;
-      trendData.push({
-        label: DAY_LABELS[i],
-        date: curr,
-        total: dayTasks.length,
-        completed: dayCompleted,
-      });
+      trendData.push(makeItem(DAY_LABELS[i], curr, dayTasks.length, dayCompleted));
 
       if (dayCompleted > 0) {
         dayCompletionCount[DAY_NAMES[i]] = dayCompleted;
@@ -145,12 +146,7 @@ export function computeAnalytics(
       const curr = formatDateString(year, month, d);
       const dayTasks = periodTasks.filter((t) => t.date === curr);
       const dayCompleted = dayTasks.filter((t) => t.completed).length;
-      trendData.push({
-        label: `${d}`,
-        date: curr,
-        total: dayTasks.length,
-        completed: dayCompleted,
-      });
+      trendData.push(makeItem(`${d}`, curr, dayTasks.length, dayCompleted));
 
       if (dayCompleted > 0) {
         const dow = getDayOfWeek(curr);
@@ -165,12 +161,7 @@ export function computeAnalytics(
       const prefix = `${year}-${String(m).padStart(2, '0')}`;
       const monthTasks = periodTasks.filter((t) => t.date.startsWith(prefix));
       const monthCompleted = monthTasks.filter((t) => t.completed).length;
-      trendData.push({
-        label: MONTH_LABELS[m - 1],
-        date: `${prefix}-01`,
-        total: monthTasks.length,
-        completed: monthCompleted,
-      });
+      trendData.push(makeItem(MONTH_LABELS[m - 1], `${prefix}-01`, monthTasks.length, monthCompleted));
     }
 
     for (const t of periodTasks) {

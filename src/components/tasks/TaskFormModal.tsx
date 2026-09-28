@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { RecurrencePicker } from "./RecurrencePicker";
@@ -48,6 +48,7 @@ export function TaskFormModal({
   const [editScope, setEditScope] = useState<EditScope>("single");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{ title: string; date: string } | null>(null);
 
   useEffect(() => {
     if (initialTask) {
@@ -75,17 +76,13 @@ export function TaskFormModal({
       setEditScope("single");
     }
     setError(null);
+    setDuplicateWarning(null);
   }, [initialTask, initialDate, categories, isOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      setError("Task title is required.");
-      return;
-    }
-
+  const executeSubmit = async (allowDuplicate = false) => {
     setIsSubmitting(true);
     setError(null);
+    setDuplicateWarning(null);
 
     try {
       let finalCategoryId: string | null = categoryId || null;
@@ -125,6 +122,7 @@ export function TaskFormModal({
         priority,
         categoryId: finalCategoryId,
         recurrenceConfig: initialTask ? null : recurrence,
+        allowDuplicate,
       };
 
       await onSubmit({
@@ -135,10 +133,53 @@ export function TaskFormModal({
 
       onClose();
     } catch (err: any) {
-      setError(err?.message || "Failed to save task.");
+      if (err?.code === "DUPLICATE_TASK_WARNING") {
+        setDuplicateWarning({ title: title.trim(), date });
+      } else {
+        setError(err?.message || "Failed to save task.");
+      }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      setError("Task title is required.");
+      return;
+    }
+
+    // 1. Repeat Until Date Validation: until_date >= task_start_date
+    if (recurrence?.untilDate && recurrence.untilDate < date) {
+      setError(`Until date must be on or after the task date (${formatToDDMMYYYY(date)}).`);
+      return;
+    }
+
+    // 2. Duplicate Detection on Same Date (Requirement 7 & 8)
+    // Check existing tasks on date for same title
+    try {
+      const existingTasks = await api.getTasks({ date });
+      const trimmedTitle = title.trim().toLowerCase();
+      const duplicate = existingTasks.find(
+        (t) => t.id !== initialTask?.id && t.title.trim().toLowerCase() === trimmedTitle
+      );
+
+      if (duplicate) {
+        // If both have no due time OR identical due time -> warn user
+        const bothNoTime = !duplicate.dueTime && !dueTime;
+        const sameTime = duplicate.dueTime && dueTime && duplicate.dueTime === dueTime;
+
+        if (bothNoTime || sameTime) {
+          setDuplicateWarning({ title: title.trim(), date });
+          return;
+        }
+      }
+    } catch {
+      // Non-blocking fallback to backend duplicate check
+    }
+
+    await executeSubmit(false);
   };
 
   return (
@@ -161,7 +202,7 @@ export function TaskFormModal({
         )}
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+          <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-300 custom:text-neutral-200 mb-1">
             Task Title <span className="text-rose-500">*</span>
           </label>
           <input
@@ -171,14 +212,14 @@ export function TaskFormModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Audit quarterly metrics"
-            className="w-full h-8 px-3 border border-slate-300 dark:border-slate-700 rounded text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
+            className="w-full h-8 px-3 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded text-xs bg-[#FAFBFD] dark:bg-neutral-900 custom:bg-[#0A0A0E]/90 text-neutral-900 dark:text-neutral-100 custom:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 custom:focus:ring-white/50"
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            Description <span className="text-neutral-400 dark:text-neutral-500">(Optional)</span>
+          <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-300 custom:text-neutral-200 mb-1">
+            Description <span className="text-neutral-500 dark:text-neutral-500">(Optional)</span>
           </label>
           <textarea
             rows={2}
@@ -186,18 +227,18 @@ export function TaskFormModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Additional context or notes..."
-            className="w-full p-2.5 border border-neutral-300 dark:border-neutral-700 rounded text-xs bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 resize-none"
+            className="w-full p-2.5 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded text-xs bg-[#FAFBFD] dark:bg-neutral-900 custom:bg-[#0A0A0E]/90 text-neutral-900 dark:text-neutral-100 custom:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 custom:focus:ring-white/50 resize-none"
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+              <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-300 custom:text-neutral-200">
                 Date <span className="text-red-500">*</span>
               </label>
               {date && (
-                <span className="text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400">
+                <span className="text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400 custom:text-blue-300">
                   {formatToDDMMYYYY(date)}
                 </span>
               )}
@@ -207,30 +248,30 @@ export function TaskFormModal({
               required
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full h-9 px-2.5 border border-neutral-300 dark:border-neutral-700 rounded text-xs bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400"
+              className="w-full h-9 px-2.5 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded text-xs bg-[#FAFBFD] dark:bg-neutral-900 custom:bg-[#0A0A0E]/90 text-neutral-900 dark:text-neutral-100 custom:text-white font-mono focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 custom:focus:ring-white/50"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Due Time <span className="text-neutral-400 dark:text-neutral-500">(Optional)</span>
+            <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-300 custom:text-neutral-200 mb-1">
+              Due Time <span className="text-neutral-500 dark:text-neutral-500">(Optional)</span>
             </label>
             <input
               type="time"
               value={dueTime}
               onChange={(e) => setDueTime(e.target.value)}
-              className="w-full h-9 px-2.5 border border-neutral-300 dark:border-neutral-700 rounded text-xs bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400"
+              className="w-full h-9 px-2.5 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded text-xs bg-[#FAFBFD] dark:bg-neutral-900 custom:bg-[#0A0A0E]/90 text-neutral-900 dark:text-neutral-100 custom:text-white font-mono focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 custom:focus:ring-white/50"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">Priority</label>
+            <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-300 custom:text-neutral-200 mb-1">Priority</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as PriorityLevel)}
-              className="w-full h-9 px-2 border border-neutral-300 dark:border-neutral-700 rounded text-xs bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400"
+              className="w-full h-9 px-2 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded text-xs bg-[#FAFBFD] dark:bg-neutral-900 custom:bg-[#0A0A0E]/90 text-neutral-900 dark:text-neutral-100 custom:text-white focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 custom:focus:ring-white/50"
             >
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
@@ -240,7 +281,7 @@ export function TaskFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+            <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-300 custom:text-neutral-200 mb-1">
               Category
             </label>
             <select
@@ -255,7 +296,7 @@ export function TaskFormModal({
                   setCategoryId(val);
                 }
               }}
-              className="w-full h-9 px-2 border border-neutral-300 dark:border-neutral-700 rounded text-xs bg-[#F4F4F5] dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:bg-white dark:focus:bg-neutral-800"
+              className="w-full h-9 px-2 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded text-xs bg-[#FAFBFD] dark:bg-neutral-900 custom:bg-[#0A0A0E]/90 text-neutral-900 dark:text-neutral-100 custom:text-white focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 custom:focus:ring-white/50"
             >
               <option value="">None</option>
               {categories.map((cat) => (
@@ -320,7 +361,7 @@ export function TaskFormModal({
 
         {/* Recurrence config for new tasks */}
         {!initialTask && (
-          <RecurrencePicker value={recurrence} onChange={setRecurrence} />
+          <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={date} />
         )}
 
         {/* Edit scope for recurring tasks */}
@@ -376,6 +417,35 @@ export function TaskFormModal({
           </Button>
         </div>
       </form>
+
+      {/* Duplicate Task Confirmation Dialog (Requirement 7 & 8) */}
+      {duplicateWarning && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-[2px] animate-in fade-in duration-100">
+          <div className="w-full max-w-sm bg-[#FAFBFD] dark:bg-[#141416] custom:bg-[#0E0E14]/95 custom:backdrop-blur-2xl border border-amber-300 dark:border-amber-800 custom:border-amber-500/40 rounded-xl p-5 shadow-2xl space-y-3 text-neutral-900 dark:text-neutral-100 custom:text-white">
+            <h4 className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+              Potential Duplicate Task
+            </h4>
+            <p className="text-xs text-neutral-700 dark:text-neutral-300 custom:text-neutral-200 leading-relaxed">
+              A task named &ldquo;<strong>{duplicateWarning.title}</strong>&rdquo; already exists on this date ({formatToDDMMYYYY(duplicateWarning.date)}). Do you want to create another one?
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-200/80 dark:border-neutral-800 custom:border-transparent">
+              <Button type="button" variant="outline" size="sm" onClick={() => setDuplicateWarning(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => executeSubmit(true)}
+                disabled={isSubmitting}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {isSubmitting ? "Creating..." : "Continue Anyway"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

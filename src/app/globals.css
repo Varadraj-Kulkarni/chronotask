@@ -1,12 +1,83 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* SF Pro Display Local Fonts */
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYTHINITALIC.OTF') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYULTRALIGHTITALIC.OTF') format('opentype');
+  font-weight: 200;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYLIGHTITALIC.OTF') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYREGULAR.OTF') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYMEDIUM.OTF') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYSEMIBOLDITALIC.OTF') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYBOLD.OTF') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYHEAVYITALIC.OTF') format('opentype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFPRODISPLAYBLACKITALIC.OTF') format('opentype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --foreground-rgb: 24, 24, 27;
-  --background-rgb: 244, 244, 245;
+  --background-rgb: 234, 235, 240; /* Calm soft modern light slate grey - zero pure white glare */
 }
 
 .dark {
@@ -14,8 +85,13 @@
   --background-rgb: 9, 9, 11;
 }
 
+.custom {
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 10, 10, 14;
+}
+
 *, *::before, *::after, input, button, select, textarea, optgroup {
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
 }
 
 html, body {
@@ -28,10 +104,10 @@ html, body {
 body {
   color: rgb(var(--foreground-rgb));
   background-color: rgb(var(--background-rgb));
-  background-image: radial-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
   background-size: 24px 24px;
   background-attachment: fixed;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
 }
 
@@ -40,7 +116,13 @@ body {
   background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
 }
 
-/* Subtle restrained scrollbar */
+/* Custom Liquid Glass Theme Body */
+html.custom body {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -51,7 +133,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
+  background: #cbd0d8;
   border-radius: 3px;
 }
 
@@ -59,10 +141,33 @@ body {
   background: #27272a;
 }
 
+.custom ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+  background: #9ca3af;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
+}
+
+.custom ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Utility to hide native scrollbar while retaining scrollability */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Horizontal scroll fade mask */
+.scroll-mask-x {
+  mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent 100%);
 }

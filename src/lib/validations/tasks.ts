@@ -8,21 +8,35 @@ export const RecurrenceConfigSchema = z.object({
   untilDate: z.string().regex(DATE_REGEX, { message: "untilDate must be in YYYY-MM-DD format" }).nullable().optional(),
 });
 
-export const CreateTaskSchema = z.object({
-  title: z
-    .string({ required_error: 'Title is required' })
-    .trim()
-    .min(1, { message: 'Title cannot be blank or empty.' })
-    .max(200, { message: 'Title cannot exceed 200 characters.' }),
-  description: z.string().max(2000, { message: 'Description cannot exceed 2000 characters.' }).nullable().optional(),
-  date: z
-    .string({ required_error: 'Date is required' })
-    .regex(DATE_REGEX, { message: "Date must conform to YYYY-MM-DD format." }),
-  dueTime: z.string().regex(TIME_REGEX, { message: "dueTime must conform to HH:MM format." }).nullable().optional(),
-  priority: PriorityLevelEnum.default('MEDIUM').optional(),
-  categoryId: z.string().nullable().optional(),
-  recurrenceConfig: RecurrenceConfigSchema.nullable().optional(),
-});
+export const CreateTaskSchema = z
+  .object({
+    title: z
+      .string({ required_error: 'Title is required' })
+      .trim()
+      .min(1, { message: 'Title cannot be blank or empty.' })
+      .max(200, { message: 'Title cannot exceed 200 characters.' }),
+    description: z.string().max(2000, { message: 'Description cannot exceed 2000 characters.' }).nullable().optional(),
+    date: z
+      .string({ required_error: 'Date is required' })
+      .regex(DATE_REGEX, { message: "Date must conform to YYYY-MM-DD format." }),
+    dueTime: z.string().regex(TIME_REGEX, { message: "dueTime must conform to HH:MM format." }).nullable().optional(),
+    priority: PriorityLevelEnum.default('MEDIUM').optional(),
+    categoryId: z.string().nullable().optional(),
+    recurrenceConfig: RecurrenceConfigSchema.nullable().optional(),
+    allowDuplicate: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.recurrenceConfig?.untilDate) {
+        return data.recurrenceConfig.untilDate >= data.date;
+      }
+      return true;
+    },
+    {
+      message: 'Until date must be on or after the task date.',
+      path: ['recurrenceConfig', 'untilDate'],
+    }
+  );
 
 export const UpdateTaskSchema = z.object({
   title: z.string().trim().min(1, { message: 'Title cannot be blank or empty.' }).max(200).optional(),
@@ -31,7 +45,17 @@ export const UpdateTaskSchema = z.object({
   dueTime: z.string().regex(TIME_REGEX, { message: "dueTime must conform to HH:MM format." }).nullable().optional(),
   priority: PriorityLevelEnum.optional(),
   categoryId: z.string().nullable().optional(),
+  originalDate: z.string().nullable().optional(),
+  rescheduledFrom: z.string().nullable().optional(),
+  rescheduleType: z.string().nullable().optional(),
+});
+
+export const RescheduleTaskSchema = z.object({
+  newDate: z.string({ required_error: 'newDate is required' }).regex(DATE_REGEX, { message: 'newDate must conform to YYYY-MM-DD format.' }),
+  dueTime: z.string().regex(TIME_REGEX, { message: 'dueTime must conform to HH:MM format.' }).nullable().optional(),
+  actionType: z.enum(['POSTPONE', 'PREPONE'], { required_error: 'actionType must be POSTPONE or PREPONE' }),
 });
 
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
+export type RescheduleTaskInput = z.infer<typeof RescheduleTaskSchema>;

@@ -128,6 +128,10 @@ class ApiClient {
         priority: body.priority || "MEDIUM",
         categoryId: body.categoryId || null,
         recurrenceId: body.recurrenceConfig ? `rec-${Date.now()}` : null,
+        originalDate: body.date,
+        rescheduledFrom: null,
+        rescheduleType: null,
+        rescheduleCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -257,9 +261,24 @@ class ApiClient {
     });
   }
 
-  async completeTask(id: string): Promise<Task> {
+  async completeTask(id: string, postponeToToday?: boolean): Promise<Task> {
     return this.request<Task>(`/tasks/${id}/complete`, {
       method: "POST",
+      body: postponeToToday ? JSON.stringify({ postponeToToday: true }) : undefined,
+    });
+  }
+
+  async rescheduleTask(
+    id: string,
+    payload: {
+      newDate: string;
+      dueTime?: string | null;
+      actionType: "POSTPONE" | "PREPONE";
+    }
+  ): Promise<Task> {
+    return this.request<Task>(`/tasks/${id}/reschedule`, {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
   }
 

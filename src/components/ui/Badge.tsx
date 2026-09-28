@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { PriorityLevel } from "@/lib/types";
@@ -20,10 +20,10 @@ export function Badge({
 
   if (variant === "priority" && priority) {
     const priorityStyles: Record<PriorityLevel, string> = {
-      LOW: "bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700",
-      MEDIUM: "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/60",
-      HIGH: "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900/60",
-      URGENT: "bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/60 font-semibold",
+      LOW: "bg-neutral-200/70 dark:bg-neutral-800 custom:bg-white/10 text-neutral-700 dark:text-neutral-300 custom:text-neutral-200 border-neutral-300 dark:border-neutral-700 custom:border-transparent",
+      MEDIUM: "bg-blue-100/80 dark:bg-blue-950/50 custom:bg-blue-950/60 text-blue-800 dark:text-blue-300 custom:text-blue-300 border-blue-300 dark:border-blue-900/60 custom:border-blue-500/30",
+      HIGH: "bg-amber-100/80 dark:bg-amber-950/50 custom:bg-amber-950/60 text-amber-900 dark:text-amber-300 custom:text-amber-300 border-amber-300 dark:border-amber-900/60 custom:border-amber-500/30",
+      URGENT: "bg-red-100/80 dark:bg-red-950/50 custom:bg-red-950/60 text-red-800 dark:text-red-300 custom:text-red-300 border-red-300 dark:border-red-900/60 custom:border-red-500/30 font-semibold",
     };
     return (
       <span className={twMerge(clsx(base, priorityStyles[priority], className))} {...props}>
@@ -32,7 +32,7 @@ export function Badge({
     );
   }
 
-  const defaultStyles = "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700";
+  const defaultStyles = "bg-[#E4E6EB] dark:bg-neutral-800 custom:bg-white/10 text-neutral-800 dark:text-neutral-200 custom:text-white border-neutral-300/80 dark:border-neutral-700 custom:border-transparent";
   return (
     <span className={twMerge(clsx(base, defaultStyles, className))} {...props}>
       {children}

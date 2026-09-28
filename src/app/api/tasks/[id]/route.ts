@@ -33,6 +33,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
       priority: task.priority,
       categoryId: task.categoryId,
       recurrenceId: task.recurrenceId,
+      originalDate: task.originalDate,
+      rescheduledFrom: task.rescheduledFrom,
+      rescheduleType: task.rescheduleType,
+      rescheduleCount: task.rescheduleCount,
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     });
@@ -130,6 +134,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       priority: updated.priority,
       categoryId: updated.categoryId,
       recurrenceId: updated.recurrenceId,
+      originalDate: updated.originalDate,
+      rescheduledFrom: updated.rescheduledFrom,
+      rescheduleType: updated.rescheduleType,
+      rescheduleCount: updated.rescheduleCount,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
     });

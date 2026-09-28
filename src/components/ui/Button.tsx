@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -13,11 +13,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       "inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none select-none touch-manipulation";
 
     const variants = {
-      primary: "bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-100 active:bg-black dark:active:bg-neutral-200 border border-transparent shadow-sm",
-      secondary: "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700",
-      outline: "border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white shadow-sm",
-      ghost: "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100/70 dark:hover:bg-neutral-800/70 border border-transparent",
-      danger: "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 border border-transparent shadow-sm",
+      primary: "bg-neutral-900 dark:bg-white custom:bg-white text-white dark:text-neutral-950 custom:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-100 custom:hover:bg-neutral-100 active:bg-black dark:active:bg-neutral-200 custom:active:bg-neutral-200 border border-transparent shadow-sm font-semibold",
+      secondary: "bg-[#E4E6EB] dark:bg-neutral-800 custom:bg-white/10 text-neutral-900 dark:text-neutral-100 custom:text-white hover:bg-[#D8DBE0] dark:hover:bg-neutral-700 custom:hover:bg-white/15 border border-neutral-300/80 dark:border-neutral-700 custom:border-transparent shadow-sm",
+      outline: "border border-neutral-300/90 dark:border-neutral-800 custom:border-transparent bg-[#FAFBFD] dark:bg-neutral-900 custom:bg-neutral-950/60 hover:bg-[#EAEBF0] dark:hover:bg-neutral-800 custom:hover:bg-white/10 text-neutral-800 dark:text-neutral-200 custom:text-white hover:text-neutral-950 dark:hover:text-white shadow-sm",
+      ghost: "text-neutral-700 dark:text-neutral-400 custom:text-neutral-300 hover:text-neutral-950 dark:hover:text-neutral-100 custom:hover:text-white hover:bg-neutral-200/60 dark:hover:bg-neutral-800/70 custom:hover:bg-white/10 border border-transparent",
+      danger: "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 border border-transparent shadow-sm font-semibold",
     };
 
     const sizes = {

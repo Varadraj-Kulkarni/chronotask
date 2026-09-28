@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { AnalyticsPeriod, AnalyticsSummaryResponse } from "@/lib/types";
@@ -46,29 +46,29 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header & Timescale Segmented Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-neutral-300/80 dark:border-neutral-800 custom:border-transparent">
         <div>
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 custom:text-white">
             Productivity Analytics
           </h1>
-          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-[11px] sm:text-xs text-neutral-600 dark:text-neutral-400 custom:text-neutral-300">
             Deterministic velocity metrics across multi-timescale horizons
           </p>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Segmented Control */}
-          <div className="flex items-center p-1 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md">
+          <div className="flex items-center p-1 bg-[#E4E6EB] dark:bg-neutral-800/80 custom:bg-black/60 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded-lg">
             {periods.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => setPeriod(p.id)}
                 className={clsx(
-                  "px-2.5 sm:px-3 py-1 text-xs font-medium rounded transition-all",
+                  "px-2.5 sm:px-3 py-1 text-xs font-medium rounded-md transition-all",
                   period === p.id
-                    ? "bg-white dark:bg-[#121214] text-neutral-900 dark:text-neutral-100 shadow-sm font-semibold"
-                    : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+                    ? "bg-[#FAFBFD] dark:bg-[#121214] custom:bg-white/20 text-neutral-950 dark:text-neutral-100 custom:text-white shadow-sm font-semibold ring-1 ring-neutral-300/80 dark:ring-neutral-700 custom:ring-transparent"
+                    : "text-neutral-700 dark:text-neutral-400 custom:text-neutral-300 hover:text-neutral-950 dark:hover:text-neutral-100 hover:bg-neutral-300/50 dark:hover:bg-neutral-800/60 custom:hover:bg-white/10"
                 )}
               >
                 {p.label}

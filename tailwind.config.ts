@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   darkMode: "class",
@@ -18,10 +19,12 @@ const config: Config = {
       },
       colors: {
         editorial: {
-          bg: "#F4F4F5",
-          panel: "#FAFAF9",
-          border: "#E4E4E7",
-          subtle: "#ECECEE",
+          bg: "#EAEBF0",
+          panel: "#F5F6F8",
+          card: "#FAFBFD",
+          well: "#E4E6EB",
+          border: "#D8DBE0",
+          subtle: "#E4E6EB",
           text: "#18181B",
           muted: "#71717A",
         },
@@ -35,11 +38,15 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text", "sans-serif"],
-        mono: ["Inter", "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text", "sans-serif"],
+        sans: ["'SF Pro Display'", "-apple-system", "BlinkMacSystemFont", "'SF Pro Text'", "sans-serif"],
+        mono: ["'SF Pro Display'", "-apple-system", "BlinkMacSystemFont", "'SF Pro Text'", "sans-serif"],
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(function ({ addVariant }) {
+      addVariant("custom", ".custom &");
+    }),
+  ],
 };
 export default config;

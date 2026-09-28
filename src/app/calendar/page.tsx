@@ -23,10 +23,10 @@ export default function CalendarPage() {
       {/* Top Banner Context */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
         <div>
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 custom:text-white">
             Calendar Master
           </h1>
-          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-[11px] sm:text-xs text-neutral-600 dark:text-neutral-400 custom:text-neutral-300">
             Date-aware completion velocity & precision task engine
           </p>
         </div>

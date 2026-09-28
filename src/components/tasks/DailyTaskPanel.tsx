@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { Task, Category, CreateTaskRequest, EditScope } from "@/lib/types";
 import { formatDateDisplay, formatToDDMMYYYY } from "@/lib/dateUtils";
 import { TaskItem } from "./TaskItem";
 import { CompletionModal } from "./CompletionModal";
 import { TaskFormModal } from "./TaskFormModal";
+import { RescheduleModal } from "./RescheduleModal";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
@@ -27,6 +28,10 @@ export function DailyTaskPanel({
   // Two-step completion confirmation state
   const [confirmingTask, setConfirmingTask] = useState<Task | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+
+  // Rescheduling modal state (Postpone & Prepone)
+  const [reschedulingTask, setReschedulingTask] = useState<Task | null>(null);
+  const [isRescheduling, setIsRescheduling] = useState(false);
 
   // Task creation/editing modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -65,11 +70,11 @@ export function DailyTaskPanel({
     setConfirmingTask(task);
   };
 
-  const handleConfirmComplete = async () => {
+  const handleConfirmComplete = async (postponeToToday = false) => {
     if (!confirmingTask) return;
     setIsCompleting(true);
     try {
-      await api.completeTask(confirmingTask.id);
+      await api.completeTask(confirmingTask.id, postponeToToday);
       setConfirmingTask(null);
       await fetchTasks();
       onTasksChanged?.();
@@ -77,6 +82,26 @@ export function DailyTaskPanel({
       alert(err?.message || "Failed to complete task");
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handleReschedule = async (
+    task: Task,
+    newDate: string,
+    actionType: "POSTPONE" | "PREPONE" = "POSTPONE",
+    dueTime?: string | null
+  ) => {
+    setIsRescheduling(true);
+    try {
+      await api.rescheduleTask(task.id, { newDate, dueTime, actionType });
+      setReschedulingTask(null);
+      await fetchTasks();
+      onTasksChanged?.();
+    } catch (err: any) {
+      alert(err?.message || "Failed to reschedule task");
+      throw err;
+    } finally {
+      setIsRescheduling(false);
     }
   };
 
@@ -138,15 +163,15 @@ export function DailyTaskPanel({
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
   return (
-    <div className="flex flex-col h-full bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg shadow-sm overflow-hidden transition-colors">
+    <div className="flex flex-col h-full bg-[#F5F6F8] dark:bg-[#121214] custom:bg-[#121218]/75 custom:backdrop-blur-xl border border-neutral-300/80 dark:border-neutral-800 custom:border-transparent rounded-xl shadow-sm overflow-hidden transition-all text-neutral-900 dark:text-neutral-100 custom:text-white">
       {/* Header */}
-      <div className="p-3.5 sm:p-4 border-b border-neutral-200/80 dark:border-neutral-800 bg-[#F4F4F5]/60 dark:bg-neutral-900/50">
+      <div className="p-3.5 sm:p-4 border-b border-neutral-300/80 dark:border-neutral-800 custom:border-transparent bg-[#EAEBF0]/60 dark:bg-neutral-900/50 custom:bg-black/30">
         <div className="flex items-start justify-between">
           <div>
-            <span className="text-[10px] sm:text-[11px] font-mono font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-[11px] font-mono font-medium text-neutral-600 dark:text-neutral-400 custom:text-neutral-300 uppercase tracking-wider">
               Daily Agenda
             </span>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 custom:text-white mt-0.5">
               {formatDateDisplay(dateStr)}
             </h3>
           </div>
@@ -166,7 +191,7 @@ export function DailyTaskPanel({
               <button
                 type="button"
                 onClick={onCloseMobile}
-                className="lg:hidden p-1.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 rounded hover:bg-neutral-200/60 dark:hover:bg-neutral-800 transition-colors"
+                className="lg:hidden p-1.5 text-neutral-500 dark:text-neutral-400 custom:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200 rounded hover:bg-neutral-200/60 dark:hover:bg-neutral-800 custom:hover:bg-white/10 transition-colors"
                 aria-label="Close panel"
               >
                 <X className="w-4 h-4" />
@@ -176,19 +201,19 @@ export function DailyTaskPanel({
         </div>
 
         {/* Progress Bar & Metric */}
-        <div className="mt-3 sm:mt-4 pt-3 border-t border-neutral-200/70 dark:border-neutral-800">
+        <div className="mt-3 sm:mt-4 pt-3 border-t border-neutral-300/70 dark:border-neutral-800 custom:border-transparent">
           <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="text-neutral-600 dark:text-neutral-400 font-medium">Completion Progress</span>
-            <span className="font-mono tabular-nums text-neutral-900 dark:text-neutral-100 font-semibold">
+            <span className="text-neutral-700 dark:text-neutral-400 custom:text-neutral-300 font-medium">Completion Progress</span>
+            <span className="font-mono tabular-nums text-neutral-900 dark:text-neutral-100 custom:text-white font-semibold">
               {completedTasks}/{totalTasks}{" "}
-              <span className="text-neutral-400 dark:text-neutral-500 font-normal text-[11px]">
+              <span className="text-neutral-500 dark:text-neutral-500 custom:text-neutral-400 font-normal text-[11px]">
                 ({completionPercentage}%)
               </span>
             </span>
           </div>
-          <div className="h-1.5 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden border border-neutral-200 dark:border-neutral-700">
+          <div className="h-1.5 w-full bg-[#E4E6EB] dark:bg-neutral-800 custom:bg-white/10 rounded-full overflow-hidden border border-neutral-300/80 dark:border-neutral-700 custom:border-transparent">
             <div
-              className="h-full bg-neutral-900 dark:bg-white transition-all duration-300 rounded-full"
+              className="h-full bg-emerald-600 dark:bg-emerald-500 custom:bg-emerald-400 transition-all duration-300 rounded-full"
               style={{ width: `${completionPercentage}%` }}
             />
           </div>
@@ -198,14 +223,14 @@ export function DailyTaskPanel({
       {/* Task List Content */}
       <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 max-h-[520px]">
         {isLoading && tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-neutral-400 text-xs">
+          <div className="flex flex-col items-center justify-center h-48 text-neutral-500 dark:text-neutral-400 custom:text-neutral-300 text-xs">
             Loading tasks...
           </div>
         ) : tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-md p-6 text-center">
-            <ListTodo className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mb-2 stroke-[1.5]" />
-            <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">No tasks for this day</p>
-            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1 max-w-[200px]">
+          <div className="flex flex-col items-center justify-center h-48 border border-dashed border-neutral-300 dark:border-neutral-800 custom:border-transparent rounded-md p-6 text-center bg-[#FAFBFD]/50 dark:bg-transparent custom:bg-white/[0.02]">
+            <ListTodo className="w-8 h-8 text-neutral-400 dark:text-neutral-600 custom:text-neutral-500 mb-2 stroke-[1.5]" />
+            <p className="text-xs font-medium text-neutral-800 dark:text-neutral-300 custom:text-white">No tasks for this day</p>
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-500 custom:text-neutral-400 mt-1 max-w-[200px]">
               Days with no tasks remain strictly neutral in calendar metrics.
             </p>
             <Button
@@ -233,6 +258,7 @@ export function DailyTaskPanel({
                 setIsFormOpen(true);
               }}
               onDelete={handlePromptDelete}
+              onReschedule={(t) => setReschedulingTask(t)}
             />
           ))
         )}
@@ -254,6 +280,15 @@ export function DailyTaskPanel({
         onConfirm={handleConfirmComplete}
         onCancel={() => setConfirmingTask(null)}
         isLoading={isCompleting}
+      />
+
+      {/* Reschedule Modal (Postpone & Prepone) */}
+      <RescheduleModal
+        task={reschedulingTask}
+        isOpen={Boolean(reschedulingTask)}
+        onClose={() => setReschedulingTask(null)}
+        onReschedule={handleReschedule}
+        isLoading={isRescheduling}
       />
 
       {/* Task Add / Edit Modal */}

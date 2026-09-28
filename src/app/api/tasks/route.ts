@@ -59,6 +59,10 @@ export async function GET(req: NextRequest) {
       priority: t.priority,
       categoryId: t.categoryId,
       recurrenceId: t.recurrenceId,
+      originalDate: t.originalDate,
+      rescheduledFrom: t.rescheduledFrom,
+      rescheduleType: t.rescheduleType,
+      rescheduleCount: t.rescheduleCount,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
     }));
@@ -94,6 +98,40 @@ export async function POST(req: NextRequest) {
   const data = parsed.data;
 
   try {
+    // Duplicate Task Detection on Same Date (Requirement 7 & 8)
+    if (!data.allowDuplicate) {
+      const trimmedTitle = data.title.trim().toLowerCase();
+      const existingTasksOnDate = await db.task.findMany({
+        where: { date: data.date },
+        select: { id: true, title: true, dueTime: true },
+      });
+
+      const duplicate = existingTasksOnDate.find((t) => {
+        if (t.title.trim().toLowerCase() !== trimmedTitle) return false;
+        // If both have no due time, or both have identical due times -> conflict
+        const bothNoTime = !t.dueTime && !data.dueTime;
+        const sameTime = t.dueTime && data.dueTime && t.dueTime === data.dueTime;
+        return bothNoTime || sameTime;
+      });
+
+      if (duplicate) {
+        return NextResponse.json(
+          {
+            code: 'DUPLICATE_TASK_WARNING',
+            message: `A task named '${data.title}' already exists on this date. Do you want to create another one?`,
+            details: {
+              field: 'title',
+              existingTaskId: duplicate.id,
+              date: data.date,
+            },
+            timestamp: new Date().toISOString(),
+            path: '/api/tasks',
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     let recurrenceId: string | null = null;
     let datesToCreate = [data.date];
 
@@ -125,6 +163,10 @@ export async function POST(req: NextRequest) {
         priority: data.priority ?? 'MEDIUM',
         categoryId: data.categoryId ?? null,
         recurrenceId,
+        originalDate: firstDate,
+        rescheduledFrom: null,
+        rescheduleType: null,
+        rescheduleCount: 0,
       },
     });
 
@@ -141,6 +183,10 @@ export async function POST(req: NextRequest) {
             priority: data.priority ?? 'MEDIUM',
             categoryId: data.categoryId ?? null,
             recurrenceId,
+            originalDate: datesToCreate[i],
+            rescheduledFrom: null,
+            rescheduleType: null,
+            rescheduleCount: 0,
           },
         });
       }
@@ -159,6 +205,10 @@ export async function POST(req: NextRequest) {
         priority: primaryTask.priority,
         categoryId: primaryTask.categoryId,
         recurrenceId: primaryTask.recurrenceId,
+        originalDate: primaryTask.originalDate,
+        rescheduledFrom: primaryTask.rescheduledFrom,
+        rescheduleType: primaryTask.rescheduleType,
+        rescheduleCount: primaryTask.rescheduleCount,
         createdAt: primaryTask.createdAt.toISOString(),
         updatedAt: primaryTask.updatedAt.toISOString(),
       },

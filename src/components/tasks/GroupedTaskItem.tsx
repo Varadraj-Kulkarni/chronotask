@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { Task, Category } from "@/lib/types";
@@ -15,6 +15,7 @@ export interface GroupedTaskItemProps {
   onUncomplete: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
+  onReschedule?: (task: Task) => void;
 }
 
 export function GroupedTaskItem({
@@ -24,6 +25,7 @@ export function GroupedTaskItem({
   onUncomplete,
   onEdit,
   onDelete,
+  onReschedule,
 }: GroupedTaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -47,18 +49,18 @@ export function GroupedTaskItem({
   return (
     <div
       className={clsx(
-        "bg-[#FAFAF9] dark:bg-[#141416] border rounded-lg transition-all shadow-sm overflow-hidden",
+        "bg-[#FAFBFD] dark:bg-[#141416] custom:bg-[#1A1A22]/80 custom:backdrop-blur-md border rounded-xl transition-all shadow-sm overflow-hidden text-neutral-900 dark:text-neutral-100 custom:text-white",
         isAllCompleted
-          ? "border-neutral-200 dark:border-neutral-800 opacity-80"
+          ? "border-neutral-300/70 dark:border-neutral-800 custom:border-transparent opacity-80"
           : isPartiallyCompleted
-          ? "border-amber-300 dark:border-amber-800/80"
-          : "border-neutral-200 dark:border-neutral-800"
+          ? "border-amber-300 dark:border-amber-800/80 custom:border-amber-500/30"
+          : "border-neutral-300/80 dark:border-neutral-800 custom:border-transparent"
       )}
     >
       {/* Main Group Header Row */}
       <div
         onClick={() => setIsExpanded((prev) => !prev)}
-        className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/40 transition-colors select-none"
+        className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-neutral-200/50 dark:hover:bg-neutral-800/40 custom:hover:bg-white/10 transition-colors select-none"
       >
         <div className="flex items-start gap-3 min-w-0">
           {/* Status glyph */}
@@ -138,8 +140,8 @@ export function GroupedTaskItem({
 
       {/* Expanded Occurrences List */}
       {isExpanded && (
-        <div className="border-t border-neutral-200/70 dark:border-neutral-800/80 p-2.5 sm:p-3 bg-neutral-50/50 dark:bg-neutral-900/30 space-y-2">
-          <div className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 px-1">
+        <div className="border-t border-neutral-300/70 dark:border-neutral-800/80 custom:border-transparent p-2.5 sm:p-3 bg-[#F5F6F8]/60 dark:bg-neutral-900/30 custom:bg-black/30 space-y-2">
+          <div className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400 custom:text-neutral-300 px-1">
             Series Occurrences:
           </div>
           {sortedTasks.map((occurrence) => (
@@ -152,6 +154,7 @@ export function GroupedTaskItem({
               onUncomplete={onUncomplete}
               onEdit={onEdit}
               onDelete={onDelete}
+              onReschedule={onReschedule}
             />
           ))}
         </div>

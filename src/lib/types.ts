@@ -25,6 +25,10 @@ export interface Task {
   priority: PriorityLevel;
   categoryId: string | null;
   recurrenceId: string | null;
+  originalDate?: string | null;
+  rescheduledFrom?: string | null;
+  rescheduleType?: string | null;
+  rescheduleCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +41,7 @@ export interface CreateTaskRequest {
   priority?: PriorityLevel;
   categoryId?: string | null;
   recurrenceConfig?: RecurrenceConfig | null;
+  allowDuplicate?: boolean;
 }
 
 export interface UpdateTaskRequest {
@@ -46,6 +51,15 @@ export interface UpdateTaskRequest {
   dueTime?: string | null;
   priority?: PriorityLevel;
   categoryId?: string | null;
+  originalDate?: string | null;
+  rescheduledFrom?: string | null;
+  rescheduleType?: string | null;
+}
+
+export interface RescheduleTaskRequest {
+  newDate: string;
+  dueTime?: string | null;
+  actionType: "POSTPONE" | "PREPONE";
 }
 
 export type EditScope = "single" | "future" | "all";

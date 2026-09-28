@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarCell } from "./CalendarCell";
 import { getMonthGrid, toCalendarDateString, getTodayDateString } from "@/lib/dateUtils";
@@ -99,7 +99,7 @@ export function MonthlyCalendar({
   ];
 
   return (
-    <div className="bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg p-3 sm:p-5 shadow-sm transition-colors">
+    <div className="bg-[#F5F6F8] dark:bg-[#121214] custom:bg-[#121218]/75 custom:backdrop-blur-xl border border-neutral-300/80 dark:border-neutral-800 custom:border-transparent rounded-xl p-3 sm:p-5 shadow-sm transition-all text-neutral-900 dark:text-neutral-100 custom:text-white">
       <CalendarHeader
         year={currentYear}
         month={currentMonth}
@@ -113,7 +113,7 @@ export function MonthlyCalendar({
         {weekdays.map((day, idx) => (
           <div
             key={idx}
-            className="py-1 text-center text-[10px] sm:text-[11px] font-mono font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider"
+            className="py-1 text-center text-[10px] sm:text-[11px] font-mono font-medium text-neutral-600 dark:text-neutral-400 custom:text-neutral-300 uppercase tracking-wider"
           >
             <span className="sm:hidden">{day.short}</span>
             <span className="hidden sm:inline">{day.full}</span>

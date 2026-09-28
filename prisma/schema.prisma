@@ -48,13 +48,17 @@ model Task {
   completed    Boolean     @default(false)
   completedAt  DateTime?
   priority     String      @default("MEDIUM")
-  categoryId   String?
-  recurrenceId String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  recurrence   Recurrence? @relation(fields: [recurrenceId], references: [id])
-  category     Category?   @relation(fields: [categoryId], references: [id])
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId      String?
+  recurrenceId    String?
+  originalDate    String?
+  rescheduledFrom String?
+  rescheduleType  String?
+  rescheduleCount Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  recurrence      Recurrence? @relation(fields: [recurrenceId], references: [id])
+  category        Category?   @relation(fields: [categoryId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([date])
   @@index([userId])

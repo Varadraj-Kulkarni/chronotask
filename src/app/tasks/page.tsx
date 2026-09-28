@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Task, Category, PriorityLevel, CreateTaskRequest, EditScope } from "@/lib/types";
@@ -7,6 +7,7 @@ import { TaskItem } from "@/components/tasks/TaskItem";
 import { GroupedTaskItem } from "@/components/tasks/GroupedTaskItem";
 import { CompletionModal } from "@/components/tasks/CompletionModal";
 import { TaskFormModal } from "@/components/tasks/TaskFormModal";
+import { RescheduleModal } from "@/components/tasks/RescheduleModal";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import {
@@ -37,6 +38,9 @@ export default function TasksPage() {
   // Modals state
   const [confirmingTask, setConfirmingTask] = useState<Task | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+
+  const [reschedulingTask, setReschedulingTask] = useState<Task | null>(null);
+  const [isRescheduling, setIsRescheduling] = useState(false);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -69,17 +73,36 @@ export default function TasksPage() {
     setConfirmingTask(task);
   };
 
-  const handleConfirmComplete = async () => {
+  const handleConfirmComplete = async (postponeToToday = false) => {
     if (!confirmingTask) return;
     setIsCompleting(true);
     try {
-      await api.completeTask(confirmingTask.id);
+      await api.completeTask(confirmingTask.id, postponeToToday);
       setConfirmingTask(null);
       await fetchTasks();
     } catch (err: any) {
       alert(err?.message || "Failed to complete task");
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handleReschedule = async (
+    task: Task,
+    newDate: string,
+    actionType: "POSTPONE" | "PREPONE" = "POSTPONE",
+    dueTime?: string | null
+  ) => {
+    setIsRescheduling(true);
+    try {
+      await api.rescheduleTask(task.id, { newDate, dueTime, actionType });
+      setReschedulingTask(null);
+      await fetchTasks();
+    } catch (err: any) {
+      alert(err?.message || "Failed to reschedule task");
+      throw err;
+    } finally {
+      setIsRescheduling(false);
     }
   };
 
@@ -239,12 +262,12 @@ export default function TasksPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-neutral-200/90 dark:border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-neutral-300/80 dark:border-neutral-800 custom:border-transparent">
         <div>
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 custom:text-white">
             Task Registry
           </h1>
-          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-[11px] sm:text-xs text-neutral-600 dark:text-neutral-400 custom:text-neutral-300">
             Unified chronological task backlog, date range horizons, and multi-filter engine
           </p>
         </div>
@@ -265,7 +288,7 @@ export default function TasksPage() {
 
       {/* Date Range Selector Segmented Control (Today / This Week / This Month) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
-        <div className="flex items-center p-1 bg-neutral-200/60 dark:bg-neutral-800/80 border border-neutral-300/70 dark:border-neutral-700/80 rounded-lg w-full sm:w-auto">
+        <div className="flex items-center p-1 bg-[#E4E6EB] dark:bg-neutral-800/80 custom:bg-black/60 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded-lg w-full sm:w-auto">
           {(
             [
               { id: "TODAY", label: "Today", count: horizonCounts.todayCount },
@@ -282,17 +305,17 @@ export default function TasksPage() {
                 className={clsx(
                   "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-medium rounded-md transition-all",
                   isActive
-                    ? "bg-[#FAFAF9] dark:bg-[#141416] text-neutral-900 dark:text-neutral-100 shadow-sm font-semibold"
-                    : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+                    ? "bg-[#FAFBFD] dark:bg-[#141416] custom:bg-white/20 text-neutral-950 dark:text-neutral-100 custom:text-white shadow-sm font-semibold ring-1 ring-neutral-300/80 dark:ring-neutral-700 custom:ring-transparent"
+                    : "text-neutral-700 dark:text-neutral-400 custom:text-neutral-300 hover:text-neutral-950 dark:hover:text-neutral-100 hover:bg-neutral-300/50 dark:hover:bg-neutral-800/60 custom:hover:bg-white/10"
                 )}
               >
                 <span>{tab.label}</span>
                 <span
                   className={clsx(
-                    "text-[10px] px-1.5 py-0.2 rounded-full",
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-mono",
                     isActive
-                      ? "bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-semibold"
-                      : "bg-neutral-200/50 dark:bg-neutral-700/50 text-neutral-500 dark:text-neutral-400"
+                      ? "bg-neutral-200 dark:bg-neutral-800 custom:bg-white/20 text-neutral-900 dark:text-neutral-200 custom:text-white font-semibold"
+                      : "bg-neutral-300/60 dark:bg-neutral-700/50 custom:bg-white/10 text-neutral-600 dark:text-neutral-400 custom:text-neutral-300"
                   )}
                 >
                   {tab.count}
@@ -303,7 +326,7 @@ export default function TasksPage() {
         </div>
 
         {/* Date horizon callout */}
-        <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 custom:text-neutral-300">
           <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
           <span>
             {horizon === "TODAY" && `Today (${formatDateDisplay(todayStr)})`}
@@ -316,7 +339,7 @@ export default function TasksPage() {
       </div>
 
       {/* Filter Bar - Mobile responsive stack */}
-      <div className="bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg p-3 sm:p-4 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between transition-colors">
+      <div className="bg-[#F5F6F8] dark:bg-[#121214] custom:bg-[#121218]/75 custom:backdrop-blur-xl border border-neutral-300/80 dark:border-neutral-800 custom:border-transparent rounded-xl p-3 sm:p-4 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between transition-all text-neutral-900 dark:text-neutral-100 custom:text-white">
         {/* Search */}
         <div className="relative w-full md:w-80">
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-3 text-neutral-400 dark:text-neutral-500" />
@@ -325,19 +348,19 @@ export default function TasksPage() {
             placeholder="Search by title or details..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-9 pl-8 pr-3 text-xs border border-neutral-300 dark:border-neutral-700 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 bg-[#F4F4F5] dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:bg-white dark:focus:bg-neutral-800"
+            className="w-full h-9 pl-8 pr-3 text-xs border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 bg-[#FAFBFD] dark:bg-neutral-800 custom:bg-[#0A0A0E]/90 text-neutral-900 dark:text-neutral-100 custom:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:bg-white dark:focus:bg-neutral-800 custom:focus:bg-[#0A0A0E]"
           />
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-300 flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 custom:text-neutral-200 flex-1 sm:flex-initial">
             <Filter className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
             <span className="hidden xs:inline">Priority:</span>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="w-full sm:w-auto h-9 px-2 border border-neutral-300 dark:border-neutral-700 rounded-md text-xs bg-[#F4F4F5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:bg-white dark:focus:bg-neutral-800"
+              className="w-full sm:w-auto h-9 px-2 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded-md text-xs bg-[#FAFBFD] dark:bg-neutral-800 custom:bg-[#0A0A0E]/90 text-neutral-800 dark:text-neutral-100 custom:text-white focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:bg-white dark:focus:bg-neutral-800 custom:focus:bg-[#0A0A0E]"
             >
               <option value="ALL">All Priorities</option>
               <option value="LOW">Low</option>
@@ -347,12 +370,12 @@ export default function TasksPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-300 flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 custom:text-neutral-200 flex-1 sm:flex-initial">
             <span className="hidden xs:inline">Status:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-auto h-9 px-2 border border-neutral-300 dark:border-neutral-700 rounded-md text-xs bg-[#F4F4F5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:bg-white dark:focus:bg-neutral-800"
+              className="w-full sm:w-auto h-9 px-2 border border-neutral-300 dark:border-neutral-700 custom:border-transparent rounded-md text-xs bg-[#FAFBFD] dark:bg-neutral-800 custom:bg-[#0A0A0E]/90 text-neutral-800 dark:text-neutral-100 custom:text-white focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:bg-white dark:focus:bg-neutral-800 custom:focus:bg-[#0A0A0E]"
             >
               <option value="ALL">All Statuses</option>
               <option value="INCOMPLETE">Incomplete</option>
@@ -369,16 +392,16 @@ export default function TasksPage() {
             Loading tasks...
           </div>
         ) : displayEntries.length === 0 ? (
-          <div className="bg-[#FAFAF9] dark:bg-[#121214] border border-neutral-200/90 dark:border-neutral-800 rounded-lg p-8 sm:p-10 text-center transition-colors">
-            <ListChecks className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <div className="bg-[#F5F6F8] dark:bg-[#121214] custom:bg-[#121218]/75 custom:backdrop-blur-xl border border-neutral-300/80 dark:border-neutral-800 custom:border-transparent rounded-xl p-8 sm:p-10 text-center transition-all text-neutral-900 dark:text-neutral-100 custom:text-white">
+            <ListChecks className="w-8 h-8 text-neutral-400 dark:text-neutral-600 custom:text-neutral-500 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-300 custom:text-white">
               {horizon === "TODAY"
                 ? "No tasks scheduled for today"
                 : horizon === "THIS_WEEK"
                 ? "No tasks found for this week"
                 : "No tasks found for this month"}
             </p>
-            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-500 custom:text-neutral-400 mt-1">
               Adjust your search filters or schedule a new task.
             </p>
           </div>
@@ -402,6 +425,7 @@ export default function TasksPage() {
                     setDeletingTask(t);
                     setDeleteScope(t.recurrenceId ? "all" : "single");
                   }}
+                  onReschedule={(t) => setReschedulingTask(t)}
                 />
               );
             }
@@ -423,6 +447,7 @@ export default function TasksPage() {
                   setDeletingTask(t);
                   setDeleteScope("single");
                 }}
+                onReschedule={(t) => setReschedulingTask(t)}
               />
             );
           })
@@ -436,6 +461,15 @@ export default function TasksPage() {
         onConfirm={handleConfirmComplete}
         onCancel={() => setConfirmingTask(null)}
         isLoading={isCompleting}
+      />
+
+      {/* Reschedule Modal (Postpone & Prepone) */}
+      <RescheduleModal
+        task={reschedulingTask}
+        isOpen={Boolean(reschedulingTask)}
+        onClose={() => setReschedulingTask(null)}
+        onReschedule={handleReschedule}
+        isLoading={isRescheduling}
       />
 
       {/* Task Form Modal */}
